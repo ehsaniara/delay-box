@@ -1,0 +1,13 @@
+build
+.DS_Store
+*.pyc
+*.iml
+test/__pycache__*
+doc/generated*
+runpy
+test-runtime
+!.gitignore
+go.mod
+go.sum
+.*.swp
+build/
