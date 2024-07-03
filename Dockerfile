@@ -13,8 +13,10 @@ RUN go mod download
 # Copy the source code into the container
 COPY . .
 
-# Build the Go application
-RUN CGO_ENABLED=0 GIN_MODE=release GOOS=linux GOARCH=amd64 go build --ldflags "-w -s" ./cmd/main.go
+# Build the Go app for multiple architectures
+ARG TARGETOS
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GIN_MODE=release GOOS="$TARGETOS" GOARCH="$TARGETARCH" go build --ldflags "-w -s" ./cmd/main.go
 
 # Use a minimal base image to run the application
 FROM gcr.io/distroless/base-debian10
@@ -28,13 +30,8 @@ COPY --from=builder /app/main /app/
 # Expose the port the app runs on
 EXPOSE 8088
 
-# Copy the configuration files
-COPY --from=builder /app/config.dev.yaml .
-COPY --from=builder /app/config.kafka_test.yaml .
-COPY --from=builder /app/config.production.yaml .
-
 # Set the default environment variable
-ENV APP_ENV=production
+ENV APP_PATH=./config/config.yaml
 
 # Command to run the application
 CMD ["/app/main"]

@@ -1,6 +1,6 @@
 httpServer:
   port: 8088
-  mode: release
+  mode: debug # or release
 
 storage:
   redisHost: localhost:6379

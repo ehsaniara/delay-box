@@ -44,7 +44,6 @@ func TestPositiveIntegrationTest(t *testing.T) {
 	err = os.Setenv("BROKERS", brokers[0])
 	assert.NoError(t, err)
 	defer func() {
-		_ = os.Unsetenv("APP_ENV")
 		_ = os.Unsetenv("APP_CONF_PATH")
 		_ = os.Unsetenv("REDIS_HOST")
 		_ = os.Unsetenv("BROKERS")
@@ -66,9 +65,7 @@ func TestPositiveIntegrationTest(t *testing.T) {
 	go runMainProcessInParallel(&wg)
 
 	//
-	err = os.Setenv("APP_ENV", "kafka_test")
-	assert.NoError(t, err)
-	err = os.Setenv("APP_CONF_PATH", ".")
+	err = os.Setenv("APP_CONF_PATH", "./kafka-test.yaml")
 	assert.NoError(t, err)
 	c := config.GetConfig()
 
@@ -146,11 +143,7 @@ func TestPositiveIntegrationTest(t *testing.T) {
 func runMainProcessInParallel(wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	if err := os.Setenv("APP_ENV", "kafka_test"); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := os.Setenv("APP_CONF_PATH", "../e2e"); err != nil {
+	if err := os.Setenv("APP_CONF_PATH", "../e2e/kafka-test.yaml"); err != nil {
 		log.Fatal(err)
 	}
 

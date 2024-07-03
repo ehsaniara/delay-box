@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"github.com/spf13/viper"
 	"log"
 	"os"
@@ -37,16 +36,12 @@ type KafkaConfig struct {
 }
 
 func GetConfig() *Config {
-	env := os.Getenv("APP_ENV")
-	if env == "" {
-		log.Fatal("APP_ENV is not set")
-	}
 	path := os.Getenv("APP_CONF_PATH")
 	if path == "" {
-		path = "./config"
+		path = "./config/config.yaml"
 	}
 
-	c, err := LoadConfig(fmt.Sprintf("%s/config.%s.yaml", path, env))
+	c, err := LoadConfig(path)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,10 +1,10 @@
 httpServer:
   port: 8088
-  mode: debug
+  mode: debug # or release
 
 storage:
   redisHost: localhost:6379
-  redisPass: secret
+  redisPass: ${REDIS_PASS}
   redisDb: 0
   chanel: schedule_chanel
   schedulerKeyName: scheduled_tasks
