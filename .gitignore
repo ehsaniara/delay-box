@@ -8,6 +8,5 @@ runpy
 test-runtime
 !.gitignore
 go.mod
-go.sum
 .*.swp
 build/
