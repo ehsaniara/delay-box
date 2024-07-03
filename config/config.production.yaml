@@ -1,0 +1,17 @@
+httpServer:
+  port: 8088
+  mode: release
+
+storage:
+  redisHost: localhost:6379
+  redisPass: ${REDIS_PASS}
+  redisDb: 0
+  chanel: schedule_chanel
+  schedulerKeyName: scheduled_tasks
+
+kafka:
+  enabled: true
+  brokers: localhost:9092
+  group: scheduler
+  schedulerTopic: Scheduler
+  taskExecutionTopic: TaskExecution

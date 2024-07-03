@@ -1,0 +1,17 @@
+httpServer:
+  port: 8088
+  mode: test
+
+storage:
+  redisHost: ${REDIS_HOST}
+  redisPass: ${REDIS_PASS}
+  redisDb: 0
+  chanel: schedule_chanel
+  schedulerKeyName: scheduled_tasks
+
+kafka:
+  enabled: true
+  brokers: ${BROKERS}
+  group: scheduler
+  schedulerTopic: Scheduler
+  taskExecutionTopic: TaskExecution

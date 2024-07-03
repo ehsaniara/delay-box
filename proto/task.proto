@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "github.com/ehsaniara/scheduler";
+
+package com.github.ehsaniara;
+
+message Task{
+  double executionTimestamp = 1;
+  map<string, bytes> header = 2;
+  bytes pyload = 3;
+}
