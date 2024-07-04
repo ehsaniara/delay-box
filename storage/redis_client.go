@@ -32,7 +32,17 @@ func NewRedisClient(ctx context.Context, config *config.Config, rdb interfaces.R
 		client.SetUp(ctx, config.Storage.RedisHost, config.Storage.RedisPass, config.Storage.RedisDb)
 	}
 
-	return client, client.Close
+	return client, func() {
+		log.Printf("⏳ Redis connection pool Closing...\n")
+		// it's not test mock
+		if rdb != nil {
+			err := rdb.Close()
+			if err != nil {
+				log.Printf("Error Close taskRedisClient:%v \n", err)
+			}
+		}
+		log.Printf("👍 Redis connection pool Closed!\n")
+	}
 }
 
 type taskRedisClient struct {
@@ -60,13 +70,4 @@ func (c *taskRedisClient) SetUp(ctx context.Context, redisHost, redisPass string
 	if err != nil {
 		log.Fatalf("Redis Connection Failed: %v\n", c.rdb)
 	}
-}
-
-func (c *taskRedisClient) Close() {
-	log.Printf("⏳ Redis connection pool Closing...\n")
-	err := c.rdb.Close()
-	if err != nil {
-		log.Printf("Error Close taskRedisClient:%v \n", err)
-	}
-	log.Printf("👍 Redis connection pool Closed!\n")
 }

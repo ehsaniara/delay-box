@@ -87,3 +87,27 @@ func Test_taskRedisClient_CountAllWaitingTasks(t *testing.T) {
 	assert.Equal(t, 1, fakeRedisDBClient.ZCardCallCount())
 
 }
+
+func Test_taskRedisClient_FetchAndRemoveDueTasks(t *testing.T) {
+	schedulerKeyName := "schedulerKeyName"
+	ctx := context.Background()
+	c := config.Config{
+		Storage: config.StorageConfig{
+			RedisHost:        "testHost",
+			SchedulerKeyName: schedulerKeyName,
+		},
+	}
+
+	fakeRedisDBClient := &interfacesfakes.FakeRedisDBClient{}
+
+	client, _ := NewRedisClient(ctx, &c, fakeRedisDBClient)
+
+	client.FetchAndRemoveDueTasks(ctx)
+
+	assert.Equal(t, 1, fakeRedisDBClient.EvalCallCount())
+
+	_ctx, _script, _skn, _ := fakeRedisDBClient.EvalArgsForCall(0)
+	assert.Equal(t, ctx, _ctx)
+	assert.Equal(t, FetchAndRemoveScript, _script)
+	assert.Equal(t, []string{schedulerKeyName}, _skn)
+}

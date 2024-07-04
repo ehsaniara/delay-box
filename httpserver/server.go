@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ehsaniara/scheduler/core"
+	"github.com/ehsaniara/scheduler/storage"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -16,12 +16,12 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 type server struct {
-	httpPort   int
-	httpServer HTTPServer
-	scheduler  core.Scheduler
-	quit       chan struct{}
-	ready      chan bool
-	stop       sync.Once
+	httpPort    int
+	httpServer  HTTPServer
+	taskStorage storage.TaskStorage
+	quit        chan struct{}
+	ready       chan bool
+	stop        sync.Once
 }
 
 // HTTPServer is an interface that abstracts the http.Server methods needed by our server.
@@ -34,13 +34,13 @@ type HTTPServer interface {
 var _ HTTPServer = (*http.Server)(nil)
 
 // NewServer should be the last service to be run so K8s know application is fully up
-func NewServer(ctx context.Context, httpPort int, httpServer HTTPServer, scheduler core.Scheduler) func() {
+func NewServer(ctx context.Context, httpPort int, httpServer HTTPServer, taskStorage storage.TaskStorage) func() {
 	s := &server{
-		httpServer: httpServer,
-		quit:       make(chan struct{}),
-		ready:      make(chan bool, 1),
-		httpPort:   httpPort,
-		scheduler:  scheduler,
+		httpServer:  httpServer,
+		taskStorage: taskStorage,
+		quit:        make(chan struct{}),
+		ready:       make(chan bool, 1),
+		httpPort:    httpPort,
 	}
 	go s.runServer(ctx)
 
@@ -113,10 +113,17 @@ func (s *server) runServer(ctx context.Context) {
 	close(serverErrors)
 }
 
+type Task struct {
+	ExecutionTimestamp float64           `json:"executionTimestamp"`
+	Header             map[string][]byte `json:"header"`
+	Pyload             []byte            `json:"pyload"`
+}
+
 func (s *server) PingHandler(c *gin.Context) {
 	c.String(http.StatusOK, "pong")
 }
 
 func (s *server) GetAllTasksHandler(c *gin.Context) {
+	s.taskStorage.GetAllTasks(c.Request.Context(), 0, 0)
 	c.String(http.StatusOK, "pong")
 }

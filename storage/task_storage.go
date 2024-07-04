@@ -110,13 +110,7 @@ func (c *taskRedisClient) GetAllTasks(ctx context.Context, offset, limit int32) 
 }
 
 func (c *taskRedisClient) CountAllWaitingTasks(ctx context.Context) (int64, error) {
-
-	card := c.rdb.ZCard(ctx, c.config.Storage.SchedulerKeyName)
-	if card.Err() != nil {
-		return 0, card.Err()
-	}
-
-	return card.Result()
+	return c.rdb.ZCard(ctx, c.config.Storage.SchedulerKeyName).Result()
 }
 
 func ConvertByteToTasks(luaResult interface{}) []*_pb.Task {
