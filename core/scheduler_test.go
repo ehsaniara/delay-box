@@ -5,27 +5,26 @@ import (
 	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/ehsaniara/scheduler/config"
-	"github.com/ehsaniara/scheduler/interfaces/interfacesfakes"
 	"github.com/ehsaniara/scheduler/kafka/kafkafakes"
 	_pb "github.com/ehsaniara/scheduler/proto"
-	"github.com/golang/protobuf/proto"
-	"github.com/redis/go-redis/v9"
+	"github.com/ehsaniara/scheduler/storage/storagefakes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
 
-func Test_scheduler_Dispatcher(t *testing.T) {
+func Test_Dispatcher(t *testing.T) {
 	schedulerKeyName := "SchedulerKeyName"
-	taskExecutionTopic := "TaskExecution"
-	schedulerTopic := "SchedulerTopic"
+	taskExecutionTopic := "TET"
+	schedulerTopic := "STT"
+
+	fakeStorage := &storagefakes.FakeTaskStorage{}
+	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	fakeRedisDBClient := &interfacesfakes.FakeRedisDBClient{}
-	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
 	c := config.Config{
 		Storage: config.StorageConfig{
 			SchedulerKeyName: schedulerKeyName,
@@ -37,82 +36,77 @@ func Test_scheduler_Dispatcher(t *testing.T) {
 		},
 	}
 
-	now := time.Now()
-	executionTime := float64(now.Add(2 * time.Second).UnixMilli()) // Schedule 2 seconds from now
+	// 2 seconds from now
+	executionTime := float64(time.Now().Add(2 * time.Second).UnixMilli())
 
-	key := "gameUuid"
-	marshal := []byte("some payload data")
+	// payload
+	key := "some Key"
+	payloadMarshal := []byte("some payload data")
 
-	newScheduler := NewScheduler(ctx, fakeRedisDBClient, fakeSyncProducer, &c)
+	// create kafka message from payload
+	newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
 	newScheduler.Dispatcher(&sarama.ConsumerMessage{
 		Key: []byte(key),
 		Headers: []*sarama.RecordHeader{{
 			Key:   []byte("executionTimestamp"),
 			Value: []byte(fmt.Sprintf("%v", executionTime)),
 		}},
-		Value: marshal, Topic: schedulerTopic,
+		Value: payloadMarshal,
+		Topic: schedulerTopic,
 	})
 
-	task := _pb.Task{
+	task := &_pb.Task{
 		ExecutionTimestamp: executionTime,
 		Header:             make(map[string][]byte),
-		Pyload:             marshal,
+		Pyload:             payloadMarshal,
 	}
 
-	marshal, err := proto.Marshal(&task)
-	assert.NoError(t, err)
+	// create task from kafka message
+	//taskMarshal, err := proto.Marshal(task)
+	//assert.NoError(t, err)
+	//assert.NotNil(t, taskMarshal)
 
-	_ctx, _name, _payload := fakeRedisDBClient.ZAddArgsForCall(0)
+	_ctx, _task := fakeStorage.SetNewTaskArgsForCall(0)
 	assert.Equal(t, ctx, _ctx)
-	assert.Equal(t, schedulerKeyName, _name)
-	assert.Equal(t, []redis.Z{
-		{
-			Score:  executionTime,
-			Member: marshal,
-		},
-	}, _payload)
+	assert.Equal(t, task.Header, _task.Header)
+	assert.Equal(t, task.ExecutionTimestamp, _task.ExecutionTimestamp)
+	assert.Equal(t, task.Pyload, _task.Pyload)
 
 }
 
-func Test_scheduler_run(t *testing.T) {
+func Test_Serve(t *testing.T) {
 	schedulerKeyName := "schedulerKeyName"
+
+	fakeStorage := &storagefakes.FakeTaskStorage{}
+	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	fakeRedisDBClient := &interfacesfakes.FakeRedisDBClient{}
-	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
 
 	c := config.Config{
 		Storage: config.StorageConfig{
-			Chanel:           "",
 			SchedulerKeyName: schedulerKeyName,
 		},
 	}
 
-	NewScheduler(ctx, fakeRedisDBClient, fakeSyncProducer, &c)
+	NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
 
-	now := float64(time.Now().UnixMilli())
-	// this is to make sure goroutines is running
-	//time.Sleep(20 * time.Millisecond)
+	assert.Equal(t, 1, fakeStorage.FetchAndRemoveDueTasksCallCount())
 
-	assert.Equal(t, 1, fakeRedisDBClient.EvalCallCount())
-
-	_ctx, _script, _keys, _timestamp := fakeRedisDBClient.EvalArgsForCall(0)
+	_ctx := fakeStorage.FetchAndRemoveDueTasksArgsForCall(0)
 	assert.Equal(t, ctx, _ctx)
-	assert.Equal(t, FetchAndRemoveScript, _script)
-	assert.Equal(t, []string{schedulerKeyName}, _keys)
-	// with 10 millisecond Comparisons
-	assert.InDelta(t, now, _timestamp[0], 10)
 }
 
 func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	schedulerKeyName := "schedulerKeyName"
 	taskExecutionTopic := "TaskExecution"
 
+	fakeStorage := &storagefakes.FakeTaskStorage{}
+	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	fakeRedisDBClient := &interfacesfakes.FakeRedisDBClient{}
-	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
+
 	c := config.Config{
 		Storage: config.StorageConfig{
 			SchedulerKeyName: schedulerKeyName,
@@ -125,38 +119,42 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 
 	executionTime := time.Now().Add(100 * time.Millisecond).UnixMilli() // Schedule 0.1 seconds from now
 
-	task := _pb.Task{
+	// create task
+	var tasks []*_pb.Task
+	task := &_pb.Task{
 		ExecutionTimestamp: float64(executionTime),
 		Header:             make(map[string][]byte),
 		Pyload:             []byte("some task"),
 	}
-	marshal, err := proto.Marshal(&task)
-	assert.NoError(t, err)
 
-	tasks := []interface{}{marshal}
+	tasks = append(tasks, task)
 
-	eval := redis.NewCmd(ctx)
-	eval.SetVal(tasks)
+	message := &sarama.ProducerMessage{
+		Topic: c.Kafka.TaskExecutionTopic,
+		Value: sarama.ByteEncoder(task.Pyload),
+	}
 
-	result, err := eval.Result()
-	assert.Nil(t, err)
-	assert.NotNil(t, result)
+	fakeStorage.FetchAndRemoveDueTasksReturnsOnCall(0, tasks)
 
-	fakeRedisDBClient.EvalReturnsOnCall(0, eval)
+	// before call
+	assert.Equal(t, 0, fakeStorage.FetchAndRemoveDueTasksCallCount())
 
 	// call
-	NewScheduler(ctx, fakeRedisDBClient, fakeSyncProducer, &c)
+	NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
 
 	// evaluate
 	// in the task loop
-	require.Equal(t, 1, fakeRedisDBClient.EvalCallCount())
+	require.Equal(t, 1, fakeStorage.FetchAndRemoveDueTasksCallCount())
 	//after task's timer executed
 	time.Sleep(250 * time.Millisecond)
-	require.Equal(t, 2, fakeRedisDBClient.EvalCallCount())
+	require.Equal(t, 2, fakeStorage.FetchAndRemoveDueTasksCallCount())
 
 	assert.Equal(t, 1, fakeSyncProducer.SendMessageCallCount())
 
 	_message := fakeSyncProducer.SendMessageArgsForCall(0)
 	assert.Equal(t, taskExecutionTopic, _message.Topic)
-	assert.EqualValues(t, marshal, _message.Value)
+	assert.Equal(t, message.Topic, _message.Topic)
+	encode, err := _message.Value.Encode()
+	assert.NoError(t, err)
+	assert.Equal(t, task.Pyload, encode)
 }
