@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ehsaniara/scheduler/core"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 type server struct {
 	httpPort   int
 	httpServer HTTPServer
+	scheduler  core.Scheduler
 	quit       chan struct{}
 	ready      chan bool
 	stop       sync.Once
@@ -32,12 +34,13 @@ type HTTPServer interface {
 var _ HTTPServer = (*http.Server)(nil)
 
 // NewServer should be the last service to be run so K8s know application is fully up
-func NewServer(ctx context.Context, httpPort int, httpServer HTTPServer) func() {
+func NewServer(ctx context.Context, httpPort int, httpServer HTTPServer, scheduler core.Scheduler) func() {
 	s := &server{
 		httpServer: httpServer,
 		quit:       make(chan struct{}),
 		ready:      make(chan bool, 1),
 		httpPort:   httpPort,
+		scheduler:  scheduler,
 	}
 	go s.runServer(ctx)
 
@@ -56,9 +59,8 @@ func (s *server) stopServer() {
 func (s *server) setupGinRouter() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
-	})
+	r.GET("/ping", s.PingHandler)
+	r.GET("/task", s.GetAllTasksHandler)
 	return r
 }
 
@@ -109,4 +111,12 @@ func (s *server) runServer(ctx context.Context) {
 	}
 
 	close(serverErrors)
+}
+
+func (s *server) PingHandler(c *gin.Context) {
+	c.String(http.StatusOK, "pong")
+}
+
+func (s *server) GetAllTasksHandler(c *gin.Context) {
+	c.String(http.StatusOK, "pong")
 }

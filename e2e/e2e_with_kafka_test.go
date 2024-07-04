@@ -8,11 +8,11 @@ import (
 	"github.com/ehsaniara/scheduler/config"
 	_task "github.com/ehsaniara/scheduler/proto"
 	"github.com/ehsaniara/scheduler/storage"
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"net/http"
 	"os"
@@ -67,7 +67,11 @@ func TestPositiveIntegrationTest(t *testing.T) {
 	//
 	err = os.Setenv("APP_CONF_PATH", "./kafka-test.yaml")
 	assert.NoError(t, err)
+
 	c := config.GetConfig()
+
+	var redisClient, redisClientCloseFn = storage.NewRedisClient(ctx, c)
+	defer redisClientCloseFn()
 
 	// Wait for the server to start
 	ready := make(chan error)
@@ -123,7 +127,7 @@ func TestPositiveIntegrationTest(t *testing.T) {
 	//check if it's in redis, to make sure message get dispatched to redis from consumer
 	time.Sleep(10 * time.Millisecond)
 
-	count, err := getAllWaitingTasks(ctx, redisAddr, c)
+	count, err := redisClient.CountAllWaitingTasks(ctx)
 	assert.NoError(t, err)
 
 	// task should be in the redis, it's not expired yet
@@ -132,7 +136,7 @@ func TestPositiveIntegrationTest(t *testing.T) {
 	//check that task got erased after that, task has only 1 sec TTL
 	time.Sleep(1005 * time.Millisecond)
 
-	count, err = getAllWaitingTasks(ctx, redisAddr, c)
+	count, err = redisClient.CountAllWaitingTasks(ctx)
 	assert.NoError(t, err)
 
 	assert.Equal(t, int64(0), count)
@@ -195,14 +199,6 @@ func runMainProcessInParallel(wg *sync.WaitGroup) {
 			log.Fatalf("Failed to stop server: %v", err)
 		}
 	}()
-}
-
-func getAllWaitingTasks(ctx context.Context, redisAddr string, c *config.Config) (int64, error) {
-	//create a redis connection
-	var redisClient, redisClientCloseFn = storage.NewRedisClient(ctx, redisAddr, "", 0)
-	defer redisClientCloseFn()
-
-	return redisClient.ZCard(ctx, c.Storage.SchedulerKeyName).Result()
 }
 
 func setupContainers(ctx context.Context) (testcontainers.Container, *kafka.KafkaContainer, error) {

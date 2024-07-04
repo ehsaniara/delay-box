@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/ehsaniara/scheduler/config"
 	"github.com/ehsaniara/scheduler/interfaces/interfacesfakes"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -35,6 +36,7 @@ func setupContainers(ctx context.Context) (testcontainers.Container, error) {
 }
 
 func TestNewRedisClient(t *testing.T) {
+	schedulerKeyName := "schedulerKeyName"
 	defer goleak.VerifyNone(t)
 
 	ctx := context.Background()
@@ -47,7 +49,15 @@ func TestNewRedisClient(t *testing.T) {
 	redisPort, err := redisContainer.MappedPort(ctx, "6379")
 	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort.Port())
 
-	client, closeFunc := NewRedisClient(ctx, redisAddr, "", 0)
+	c := config.Config{
+		Storage: config.StorageConfig{
+			RedisHost:        redisAddr,
+			Chanel:           "",
+			SchedulerKeyName: schedulerKeyName,
+		},
+	}
+
+	client, closeFunc := NewRedisClient(ctx, &c)
 	defer closeFunc()
 
 	assert.NotNil(t, client, "Redis client should not be nil")
@@ -66,7 +76,7 @@ func TestRedisClient_SetUp(t *testing.T) {
 	redisPort, err := redisContainer.MappedPort(ctx, "6379")
 	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort.Port())
 
-	client := &redisClient{}
+	client := &taskRedisClient{}
 	client.SetUp(ctx, redisAddr, "", 0)
 
 	require.NotNil(t, client.rdb, "Redis client should be initialized")
@@ -89,7 +99,7 @@ func TestEval(t *testing.T) {
 	fakeCmd.SetVal([]interface{}{"result1", "result2"})
 	fakeRedis.EvalReturns(fakeCmd)
 
-	client := &redisClient{rdb: fakeRedis}
+	client := &taskRedisClient{rdb: fakeRedis}
 
 	script := "return redis.call('keys', '*')"
 	keys := []string{}
@@ -112,7 +122,7 @@ func TestZAdd(t *testing.T) {
 	intCmd := redis.NewIntResult(1, nil)
 	fakeRedis.ZAddReturns(intCmd)
 
-	client := &redisClient{rdb: fakeRedis}
+	client := &taskRedisClient{rdb: fakeRedis}
 
 	now := time.Now()
 
@@ -129,3 +139,24 @@ func TestZAdd(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), res)
 }
+
+//func TestConvertByteToTask(t *testing.T) {
+//	now := time.Now()
+//	f := float64(now.Add(10 * time.Second).UnixMilli())
+//	task := []*_pb.Task{
+//		{
+//			ExecutionTimestamp: f,
+//			Header:             make(map[string][]byte),
+//			Pyload:             []byte("Test Payload"),
+//		},
+//	}
+//
+//	marshal, err := proto.Marshal(task)
+//	require.NoError(t, err)
+//
+//	var tasksInterface interface{} = marshal
+//
+//	toTask := ConvertByteToTasks(tasksInterface)
+//
+//	assert.Equal(t, &task, toTask)
+//}

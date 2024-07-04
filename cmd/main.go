@@ -22,13 +22,13 @@ func main() {
 	config.Print(c)
 
 	// Redis localhost:6379, secret
-	redisClient, redisClientClose := storage.NewRedisClient(ctx, c.Storage.RedisHost, c.Storage.RedisPass, c.Storage.RedisDb)
+	s, redisClientClose := storage.NewRedisClient(ctx, c)
 
 	// RR Partition Producer
 	producer, producerClose := kafka.NewProducer(c)
 
 	// starting the scheduler app
-	scheduler := core.NewScheduler(ctx, redisClient, producer, c)
+	scheduler := core.NewScheduler(ctx, s, producer, c)
 
 	//start all consumers
 	consumerGroup := kafka.NewConsumerGroup(c)
@@ -40,7 +40,7 @@ func main() {
 	dispatchSchedulerConsumer.Start(ctx)
 
 	//start server
-	stopServer := httpserver.NewServer(ctx, c.HttpServer.Port, nil)
+	stopServer := httpserver.NewServer(ctx, c.HttpServer.Port, nil, scheduler)
 	log.Println("🚀 scheduler is ready!")
 
 	sigterm := make(chan os.Signal, 1)
