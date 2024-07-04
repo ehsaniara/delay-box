@@ -57,7 +57,7 @@ func TestNewRedisClient(t *testing.T) {
 		},
 	}
 
-	client, closeFunc := NewRedisClient(ctx, &c)
+	client, closeFunc := NewRedisClient(ctx, &c, nil)
 	defer closeFunc()
 
 	assert.NotNil(t, client, "Redis client should not be nil")
@@ -139,24 +139,3 @@ func TestZAdd(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), res)
 }
-
-//func TestConvertByteToTask(t *testing.T) {
-//	now := time.Now()
-//	f := float64(now.Add(10 * time.Second).UnixMilli())
-//	task := []*_pb.Task{
-//		{
-//			ExecutionTimestamp: f,
-//			Header:             make(map[string][]byte),
-//			Pyload:             []byte("Test Payload"),
-//		},
-//	}
-//
-//	marshal, err := proto.Marshal(task)
-//	require.NoError(t, err)
-//
-//	var tasksInterface interface{} = marshal
-//
-//	toTask := ConvertByteToTasks(tasksInterface)
-//
-//	assert.Equal(t, &task, toTask)
-//}

@@ -34,9 +34,12 @@ type FakeTaskStorage struct {
 	fetchAndRemoveDueTasksReturnsOnCall map[int]struct {
 		result1 []*scheduler.Task
 	}
-	GetAllTasksStub        func() []*scheduler.Task
+	GetAllTasksStub        func(context.Context, int32, int32) []*scheduler.Task
 	getAllTasksMutex       sync.RWMutex
 	getAllTasksArgsForCall []struct {
+		arg1 context.Context
+		arg2 int32
+		arg3 int32
 	}
 	getAllTasksReturns struct {
 		result1 []*scheduler.Task
@@ -179,17 +182,20 @@ func (fake *FakeTaskStorage) FetchAndRemoveDueTasksReturnsOnCall(i int, result1 
 	}{result1}
 }
 
-func (fake *FakeTaskStorage) GetAllTasks() []*scheduler.Task {
+func (fake *FakeTaskStorage) GetAllTasks(arg1 context.Context, arg2 int32, arg3 int32) []*scheduler.Task {
 	fake.getAllTasksMutex.Lock()
 	ret, specificReturn := fake.getAllTasksReturnsOnCall[len(fake.getAllTasksArgsForCall)]
 	fake.getAllTasksArgsForCall = append(fake.getAllTasksArgsForCall, struct {
-	}{})
+		arg1 context.Context
+		arg2 int32
+		arg3 int32
+	}{arg1, arg2, arg3})
 	stub := fake.GetAllTasksStub
 	fakeReturns := fake.getAllTasksReturns
-	fake.recordInvocation("GetAllTasks", []interface{}{})
+	fake.recordInvocation("GetAllTasks", []interface{}{arg1, arg2, arg3})
 	fake.getAllTasksMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -203,10 +209,17 @@ func (fake *FakeTaskStorage) GetAllTasksCallCount() int {
 	return len(fake.getAllTasksArgsForCall)
 }
 
-func (fake *FakeTaskStorage) GetAllTasksCalls(stub func() []*scheduler.Task) {
+func (fake *FakeTaskStorage) GetAllTasksCalls(stub func(context.Context, int32, int32) []*scheduler.Task) {
 	fake.getAllTasksMutex.Lock()
 	defer fake.getAllTasksMutex.Unlock()
 	fake.GetAllTasksStub = stub
+}
+
+func (fake *FakeTaskStorage) GetAllTasksArgsForCall(i int) (context.Context, int32, int32) {
+	fake.getAllTasksMutex.RLock()
+	defer fake.getAllTasksMutex.RUnlock()
+	argsForCall := fake.getAllTasksArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeTaskStorage) GetAllTasksReturns(result1 []*scheduler.Task) {

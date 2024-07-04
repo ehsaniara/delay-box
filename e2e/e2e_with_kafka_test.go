@@ -70,7 +70,7 @@ func TestPositiveIntegrationTest(t *testing.T) {
 
 	c := config.GetConfig()
 
-	var redisClient, redisClientCloseFn = storage.NewRedisClient(ctx, c)
+	var redisClient, redisClientCloseFn = storage.NewRedisClient(ctx, c, nil)
 	defer redisClientCloseFn()
 
 	// Wait for the server to start
