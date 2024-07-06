@@ -158,3 +158,42 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, task.Pyload, encode)
 }
+
+func Test_scheduler_PublishNewTask(t *testing.T) {
+	schedulerKeyName := "SchedulerKeyName"
+	taskExecutionTopic := "TET"
+	schedulerTopic := "STT"
+
+	fakeStorage := &storagefakes.FakeTaskStorage{}
+	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	c := config.Config{
+		Storage: config.StorageConfig{
+			SchedulerKeyName: schedulerKeyName,
+		},
+		Kafka: config.KafkaConfig{
+			Enabled:            true,
+			SchedulerTopic:     schedulerTopic,
+			TaskExecutionTopic: taskExecutionTopic,
+		},
+	}
+
+	// 2 seconds from now
+	executionTime := float64(time.Now().Add(2 * time.Second).UnixMilli())
+
+	payloadMarshal := []byte("some payload data")
+
+	task := &_pb.Task{
+		ExecutionTimestamp: executionTime,
+		Header:             make(map[string][]byte),
+		Pyload:             payloadMarshal,
+	}
+	// create kafka message from payload
+	newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
+	newScheduler.PublishNewTask(task)
+	assert.Equal(t, 1, fakeSyncProducer.SendMessageCallCount())
+
+}

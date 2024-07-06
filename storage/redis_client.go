@@ -157,7 +157,6 @@ const GetAllTasksPagination = `
 local key = KEYS[1]
 local start = tonumber(ARGV[1])
 local stop = tonumber(ARGV[2])
-
 local elements = redis.call('ZRANGE', key, start, stop, 'WITHSCORES')
 return elements
 `
@@ -214,6 +213,11 @@ func ConvertByteToTasks(luaResult interface{}) []*_pb.Task {
 			}
 
 			bytes := []byte(str)
+
+			if len(bytes) < 32 {
+				//fmt.Printf("📝 Bad Decoding: %x\n", bytes) // Print the byte data in hexadecimal format for debugging
+				continue
+			}
 
 			var task _pb.Task
 

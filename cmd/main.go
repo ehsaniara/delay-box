@@ -40,7 +40,7 @@ func main() {
 	dispatchSchedulerConsumer.Start(ctx)
 
 	//start server
-	stopServer := httpserver.NewServer(ctx, c.HttpServer.Port, nil, s)
+	stopServer := httpserver.NewServer(ctx, nil, s, scheduler, c)
 	log.Println("🚀 scheduler is ready!")
 
 	sigterm := make(chan os.Signal, 1)

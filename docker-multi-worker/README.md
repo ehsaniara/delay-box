@@ -10,15 +10,7 @@ This project contains the following components:
 
 ## Quick Start
 
-Clone the project
-
-```shell
-git clone git@github.com:ehsaniara/scheduler.git
-
-cd scheduler
-```
-
-make sure to have docker-compose and then run the docker compose as:
+Make sure to have docker-compose in your machine and then run the docker compose as:
 ```shell
 docker-compose -f docker-multi-worker/docker-compose.yml up -d
 ```

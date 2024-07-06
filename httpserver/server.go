@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/ehsaniara/scheduler/config"
+	"github.com/ehsaniara/scheduler/core"
 	_pb "github.com/ehsaniara/scheduler/proto"
 	"github.com/ehsaniara/scheduler/storage"
 	"github.com/gin-gonic/gin"
@@ -22,6 +24,8 @@ type server struct {
 	httpPort    int
 	httpServer  HTTPServer
 	taskStorage storage.TaskStorage
+	scheduler   core.Scheduler
+	config      *config.Config
 	quit        chan struct{}
 	ready       chan bool
 	stop        sync.Once
@@ -37,13 +41,15 @@ type HTTPServer interface {
 var _ HTTPServer = (*http.Server)(nil)
 
 // NewServer should be the last service to be run so K8s know application is fully up
-func NewServer(ctx context.Context, httpPort int, httpServer HTTPServer, taskStorage storage.TaskStorage) func() {
+func NewServer(ctx context.Context, httpServer HTTPServer, taskStorage storage.TaskStorage, scheduler core.Scheduler, config *config.Config) func() {
 	s := &server{
 		httpServer:  httpServer,
 		taskStorage: taskStorage,
+		config:      config,
+		scheduler:   scheduler,
 		quit:        make(chan struct{}),
 		ready:       make(chan bool, 1),
-		httpPort:    httpPort,
+		httpPort:    config.HttpServer.Port,
 	}
 	go s.runServer(ctx)
 
@@ -152,6 +158,7 @@ func (s *server) GetAllTasksHandler(c *gin.Context) {
 			ExecutionTimestamp: task.ExecutionTimestamp,
 			TaskType:           task.TaskType.String(),
 			Header:             ConvertProtoHeaderToHeader(task.Header),
+			Pyload:             base64.StdEncoding.EncodeToString(task.Pyload),
 		})
 	}
 	if len(tasks) > 0 {
@@ -191,7 +198,14 @@ func (s *server) SetNewTaskHandler(c *gin.Context) {
 		Pyload:             byteArray,
 	}
 
-	s.taskStorage.SetNewTask(c.Request.Context(), pbTask)
+	// enable to use kafka or direct write to redis
+	// recommended to enable kafka in high write traffic
+	if s.config.Kafka.Enabled {
+		s.scheduler.PublishNewTask(pbTask)
+	} else {
+		s.taskStorage.SetNewTask(c.Request.Context(), pbTask)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "task created",
 	})

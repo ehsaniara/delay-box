@@ -338,7 +338,7 @@ func TestConvertByteToTasks_ValidProtobufMessages(t *testing.T) {
 	task := _pb.Task{
 		ExecutionTimestamp: float64(executionTime),
 		Header:             make(map[string][]byte),
-		Pyload:             []byte("some task"),
+		Pyload:             []byte("----- some task ------"), // length should be grater than 32bit
 		TaskType:           _pb.Task_PUB_SUB,
 	}
 
