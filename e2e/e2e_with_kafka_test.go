@@ -6,17 +6,20 @@ import (
 	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/ehsaniara/scheduler/config"
+	"github.com/ehsaniara/scheduler/kafka"
 	_task "github.com/ehsaniara/scheduler/proto"
 	"github.com/ehsaniara/scheduler/storage"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/kafka"
+	_kafkaContainer "github.com/testcontainers/testcontainers-go/modules/kafka"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -63,6 +66,7 @@ func TestPositiveIntegrationTest(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go runMainProcessInParallel(&wg)
+	wg.Done()
 
 	//
 	err = os.Setenv("APP_CONF_PATH", "./kafka-test.yaml")
@@ -70,7 +74,7 @@ func TestPositiveIntegrationTest(t *testing.T) {
 
 	c := config.GetConfig()
 
-	var redisClient, redisClientCloseFn = storage.NewRedisClient(ctx, c, nil)
+	var redisClient, redisClientCloseFn = storage.NewRedisClient(ctx, c)
 	defer redisClientCloseFn()
 
 	// Wait for the server to start
@@ -107,6 +111,7 @@ func TestPositiveIntegrationTest(t *testing.T) {
 	// Schedule 1/4 seconds from now
 	executionTime := float64(time.Now().Add(time.Millisecond * 250).UnixMilli())
 	task := _task.Task{
+		TaskUuid:           uuid.NewString(),
 		ExecutionTimestamp: executionTime,
 		Header:             make(map[string][]byte),
 		Pyload:             []byte("some payload data"),
@@ -141,7 +146,35 @@ func TestPositiveIntegrationTest(t *testing.T) {
 
 	assert.Equal(t, int64(0), count)
 
-	wg.Done()
+	//create consumer on task execute topic
+	wg.Add(1)
+	go consumerForTaskExecutionTopic(t, ctx, &wg, c, &task)
+
+	wg.Wait()
+	fmt.Println("All workers done")
+}
+
+func consumerForTaskExecutionTopic(t *testing.T, ctx context.Context, wg *sync.WaitGroup, c *config.Config, expectedTask *_task.Task) {
+
+	consumerGroup := kafka.NewConsumerGroup(c)
+	kafka.NewConsumer(
+		strings.Split(c.Kafka.TaskExecutionTopic, `,`),
+		consumerGroup,
+		func(message *sarama.ConsumerMessage) {
+			assert.NotNil(t, message.Value)
+
+			var task _task.Task
+			err := proto.Unmarshal(message.Value, &task)
+			assert.NoError(t, err)
+
+			assert.Equal(t, expectedTask.ExecutionTimestamp, task.ExecutionTimestamp)
+			assert.Equal(t, expectedTask.TaskType, task.TaskType)
+			assert.Equal(t, expectedTask.TaskUuid, task.TaskUuid)
+
+			log.Printf("TaskExecutionTopic consumerGroup task: %v", task)
+			wg.Done()
+		},
+	).Start(ctx)
 }
 
 func runMainProcessInParallel(wg *sync.WaitGroup) {
@@ -201,7 +234,7 @@ func runMainProcessInParallel(wg *sync.WaitGroup) {
 	}()
 }
 
-func setupContainers(ctx context.Context) (testcontainers.Container, *kafka.KafkaContainer, error) {
+func setupContainers(ctx context.Context) (testcontainers.Container, *_kafkaContainer.KafkaContainer, error) {
 
 	clusterID := "test-cluster-id"
 
@@ -227,7 +260,7 @@ func setupContainers(ctx context.Context) (testcontainers.Container, *kafka.Kafk
 	fmt.Println(redisState.Running)
 
 	//setting-up kafka
-	kafkaContainer, err := kafka.RunContainer(ctx, kafka.WithClusterID(clusterID), testcontainers.WithImage("confluentinc/confluent-local:7.5.0"))
+	kafkaContainer, err := _kafkaContainer.RunContainer(ctx, _kafkaContainer.WithClusterID(clusterID), testcontainers.WithImage("confluentinc/confluent-local:7.5.0"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}

@@ -2,12 +2,15 @@ package httpserver
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	_pb "github.com/ehsaniara/scheduler/proto"
 	"github.com/ehsaniara/scheduler/storage"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -61,6 +64,7 @@ func (s *server) setupGinRouter() *gin.Engine {
 	r := gin.Default()
 	r.GET("/ping", s.PingHandler)
 	r.GET("/task", s.GetAllTasksHandler)
+	r.POST("/task", s.SetNewTaskHandler)
 	return r
 }
 
@@ -114,9 +118,11 @@ func (s *server) runServer(ctx context.Context) {
 }
 
 type Task struct {
+	TaskUuid           string            `json:"taskUuid"`
 	ExecutionTimestamp float64           `json:"executionTimestamp"`
-	Header             map[string][]byte `json:"header"`
-	Pyload             []byte            `json:"pyload"`
+	TaskType           string            `json:"taskType"`
+	Header             map[string]string `json:"header"`
+	Pyload             string            `json:"pyload"`
 }
 
 func (s *server) PingHandler(c *gin.Context) {
@@ -124,6 +130,102 @@ func (s *server) PingHandler(c *gin.Context) {
 }
 
 func (s *server) GetAllTasksHandler(c *gin.Context) {
-	s.taskStorage.GetAllTasks(c.Request.Context(), 0, 0)
-	c.String(http.StatusOK, "pong")
+
+	offsetStr := c.Query("offset")
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		c.String(http.StatusBadRequest, "offset is invalid")
+		return
+	}
+
+	limitStr := c.Query("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.String(http.StatusBadRequest, "limit is invalid")
+		return
+	}
+
+	var tasks []Task
+	for _, task := range s.taskStorage.GetAllTasksPagination(c.Request.Context(), int32(offset), int32(limit)) {
+		tasks = append(tasks, Task{
+			TaskUuid:           task.TaskUuid,
+			ExecutionTimestamp: task.ExecutionTimestamp,
+			TaskType:           task.TaskType.String(),
+			Header:             ConvertProtoHeaderToHeader(task.Header),
+		})
+	}
+	if len(tasks) > 0 {
+		c.JSON(http.StatusOK, tasks)
+	} else {
+		c.JSON(http.StatusOK, make([]string, 0))
+	}
+}
+
+func (s *server) SetNewTaskHandler(c *gin.Context) {
+	var task *Task
+
+	// Bind the JSON to the newItem struct
+	if err := c.ShouldBindJSON(&task); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	taskType, err := StringToTaskType(task.TaskType)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	byteArray, err := base64.StdEncoding.DecodeString(task.Pyload)
+	if err != nil {
+		fmt.Printf("Error decoding base64 string: %v\n", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	pbTask := &_pb.Task{
+		TaskUuid:           task.TaskUuid,
+		ExecutionTimestamp: task.ExecutionTimestamp,
+		TaskType:           taskType,
+		Header:             ConvertHeaderToProtoHeader(task.Header),
+		Pyload:             byteArray,
+	}
+
+	s.taskStorage.SetNewTask(c.Request.Context(), pbTask)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "task created",
+	})
+}
+
+// StringToTaskType converts a taskStr to a Task_Type enum.
+func StringToTaskType(taskStr string) (_pb.Task_Type, error) {
+	// Look up the enum value by name
+	if enumVal, ok := _pb.Task_Type_value[taskStr]; ok {
+		return _pb.Task_Type(enumVal), nil
+	}
+	return _pb.Task_PUB_SUB, fmt.Errorf("invalid enum value: %s", taskStr)
+}
+
+// ConvertHeaderToProtoHeader return map[string][]byte
+func ConvertHeaderToProtoHeader(header map[string]string) map[string][]byte {
+	var pbHeader = make(map[string][]byte)
+	for k, v := range header {
+		byteArray, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			log.Printf("Error decoding base64 string: %v\n", err)
+			continue
+		}
+		pbHeader[k] = byteArray
+	}
+	return pbHeader
+}
+
+// ConvertProtoHeaderToHeader return map[string]string
+func ConvertProtoHeaderToHeader(header map[string][]byte) map[string]string {
+	var pbHeader = make(map[string]string)
+	for k, v := range header {
+		// Encode the serialized protobuf message to a Base64 encoded string
+		pbHeader[k] = base64.StdEncoding.EncodeToString(v)
+	}
+	return pbHeader
 }

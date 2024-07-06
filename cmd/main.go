@@ -22,7 +22,7 @@ func main() {
 	config.Print(c)
 
 	// Redis localhost:6379, secret
-	s, redisClientClose := storage.NewRedisClient(ctx, c, nil)
+	s, redisClientClose := storage.NewRedisClient(ctx, c)
 
 	// RR Partition Producer
 	producer, producerClose := kafka.NewProducer(c)

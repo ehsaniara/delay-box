@@ -16,7 +16,6 @@ import (
 type Scheduler interface {
 	Dispatcher(message *sarama.ConsumerMessage)
 	Stop()
-	GetAllTasks(ctx context.Context, offset, limit int32) []*_pb.Task
 }
 
 type scheduler struct {
@@ -128,11 +127,4 @@ func (s *scheduler) Stop() {
 	log.Println("⏳  Scheduler Stopping...")
 	close(s.quit)
 	log.Println("👍 Scheduler Stopped.")
-}
-
-func (s *scheduler) GetAllTasks(ctx context.Context, offset, limit int32) []*_pb.Task {
-	log.Println("Get called")
-	//maxTimestamp := fmt.Sprintf("%d", time.Now().Add(10*time.Second).UnixMilli())
-	//return redisClient.Eval(ctx, listOfAllTaskScript, []string{core.SchedulerKeyName}, "0", maxTimestamp, "delete").Result()
-	return nil
 }

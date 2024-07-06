@@ -34,17 +34,28 @@ type FakeTaskStorage struct {
 	fetchAndRemoveDueTasksReturnsOnCall map[int]struct {
 		result1 []*scheduler.Task
 	}
-	GetAllTasksStub        func(context.Context, int32, int32) []*scheduler.Task
+	GetAllTasksStub        func(context.Context) []*scheduler.Task
 	getAllTasksMutex       sync.RWMutex
 	getAllTasksArgsForCall []struct {
 		arg1 context.Context
-		arg2 int32
-		arg3 int32
 	}
 	getAllTasksReturns struct {
 		result1 []*scheduler.Task
 	}
 	getAllTasksReturnsOnCall map[int]struct {
+		result1 []*scheduler.Task
+	}
+	GetAllTasksPaginationStub        func(context.Context, int32, int32) []*scheduler.Task
+	getAllTasksPaginationMutex       sync.RWMutex
+	getAllTasksPaginationArgsForCall []struct {
+		arg1 context.Context
+		arg2 int32
+		arg3 int32
+	}
+	getAllTasksPaginationReturns struct {
+		result1 []*scheduler.Task
+	}
+	getAllTasksPaginationReturnsOnCall map[int]struct {
 		result1 []*scheduler.Task
 	}
 	SetNewTaskStub        func(context.Context, *scheduler.Task)
@@ -182,20 +193,18 @@ func (fake *FakeTaskStorage) FetchAndRemoveDueTasksReturnsOnCall(i int, result1 
 	}{result1}
 }
 
-func (fake *FakeTaskStorage) GetAllTasks(arg1 context.Context, arg2 int32, arg3 int32) []*scheduler.Task {
+func (fake *FakeTaskStorage) GetAllTasks(arg1 context.Context) []*scheduler.Task {
 	fake.getAllTasksMutex.Lock()
 	ret, specificReturn := fake.getAllTasksReturnsOnCall[len(fake.getAllTasksArgsForCall)]
 	fake.getAllTasksArgsForCall = append(fake.getAllTasksArgsForCall, struct {
 		arg1 context.Context
-		arg2 int32
-		arg3 int32
-	}{arg1, arg2, arg3})
+	}{arg1})
 	stub := fake.GetAllTasksStub
 	fakeReturns := fake.getAllTasksReturns
-	fake.recordInvocation("GetAllTasks", []interface{}{arg1, arg2, arg3})
+	fake.recordInvocation("GetAllTasks", []interface{}{arg1})
 	fake.getAllTasksMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3)
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -209,17 +218,17 @@ func (fake *FakeTaskStorage) GetAllTasksCallCount() int {
 	return len(fake.getAllTasksArgsForCall)
 }
 
-func (fake *FakeTaskStorage) GetAllTasksCalls(stub func(context.Context, int32, int32) []*scheduler.Task) {
+func (fake *FakeTaskStorage) GetAllTasksCalls(stub func(context.Context) []*scheduler.Task) {
 	fake.getAllTasksMutex.Lock()
 	defer fake.getAllTasksMutex.Unlock()
 	fake.GetAllTasksStub = stub
 }
 
-func (fake *FakeTaskStorage) GetAllTasksArgsForCall(i int) (context.Context, int32, int32) {
+func (fake *FakeTaskStorage) GetAllTasksArgsForCall(i int) context.Context {
 	fake.getAllTasksMutex.RLock()
 	defer fake.getAllTasksMutex.RUnlock()
 	argsForCall := fake.getAllTasksArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1
 }
 
 func (fake *FakeTaskStorage) GetAllTasksReturns(result1 []*scheduler.Task) {
@@ -241,6 +250,69 @@ func (fake *FakeTaskStorage) GetAllTasksReturnsOnCall(i int, result1 []*schedule
 		})
 	}
 	fake.getAllTasksReturnsOnCall[i] = struct {
+		result1 []*scheduler.Task
+	}{result1}
+}
+
+func (fake *FakeTaskStorage) GetAllTasksPagination(arg1 context.Context, arg2 int32, arg3 int32) []*scheduler.Task {
+	fake.getAllTasksPaginationMutex.Lock()
+	ret, specificReturn := fake.getAllTasksPaginationReturnsOnCall[len(fake.getAllTasksPaginationArgsForCall)]
+	fake.getAllTasksPaginationArgsForCall = append(fake.getAllTasksPaginationArgsForCall, struct {
+		arg1 context.Context
+		arg2 int32
+		arg3 int32
+	}{arg1, arg2, arg3})
+	stub := fake.GetAllTasksPaginationStub
+	fakeReturns := fake.getAllTasksPaginationReturns
+	fake.recordInvocation("GetAllTasksPagination", []interface{}{arg1, arg2, arg3})
+	fake.getAllTasksPaginationMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeTaskStorage) GetAllTasksPaginationCallCount() int {
+	fake.getAllTasksPaginationMutex.RLock()
+	defer fake.getAllTasksPaginationMutex.RUnlock()
+	return len(fake.getAllTasksPaginationArgsForCall)
+}
+
+func (fake *FakeTaskStorage) GetAllTasksPaginationCalls(stub func(context.Context, int32, int32) []*scheduler.Task) {
+	fake.getAllTasksPaginationMutex.Lock()
+	defer fake.getAllTasksPaginationMutex.Unlock()
+	fake.GetAllTasksPaginationStub = stub
+}
+
+func (fake *FakeTaskStorage) GetAllTasksPaginationArgsForCall(i int) (context.Context, int32, int32) {
+	fake.getAllTasksPaginationMutex.RLock()
+	defer fake.getAllTasksPaginationMutex.RUnlock()
+	argsForCall := fake.getAllTasksPaginationArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeTaskStorage) GetAllTasksPaginationReturns(result1 []*scheduler.Task) {
+	fake.getAllTasksPaginationMutex.Lock()
+	defer fake.getAllTasksPaginationMutex.Unlock()
+	fake.GetAllTasksPaginationStub = nil
+	fake.getAllTasksPaginationReturns = struct {
+		result1 []*scheduler.Task
+	}{result1}
+}
+
+func (fake *FakeTaskStorage) GetAllTasksPaginationReturnsOnCall(i int, result1 []*scheduler.Task) {
+	fake.getAllTasksPaginationMutex.Lock()
+	defer fake.getAllTasksPaginationMutex.Unlock()
+	fake.GetAllTasksPaginationStub = nil
+	if fake.getAllTasksPaginationReturnsOnCall == nil {
+		fake.getAllTasksPaginationReturnsOnCall = make(map[int]struct {
+			result1 []*scheduler.Task
+		})
+	}
+	fake.getAllTasksPaginationReturnsOnCall[i] = struct {
 		result1 []*scheduler.Task
 	}{result1}
 }
@@ -287,6 +359,8 @@ func (fake *FakeTaskStorage) Invocations() map[string][][]interface{} {
 	defer fake.fetchAndRemoveDueTasksMutex.RUnlock()
 	fake.getAllTasksMutex.RLock()
 	defer fake.getAllTasksMutex.RUnlock()
+	fake.getAllTasksPaginationMutex.RLock()
+	defer fake.getAllTasksPaginationMutex.RUnlock()
 	fake.setNewTaskMutex.RLock()
 	defer fake.setNewTaskMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

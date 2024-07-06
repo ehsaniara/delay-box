@@ -5,7 +5,14 @@ option go_package = "github.com/ehsaniara/scheduler";
 package com.github.ehsaniara;
 
 message Task{
-  double executionTimestamp = 1;
-  map<string, bytes> header = 2;
-  bytes pyload = 3;
+  string taskUuid = 1;
+  double executionTimestamp = 2;
+  Type taskType = 3;
+  map<string, bytes> header = 4;
+  bytes pyload = 5;
+
+  enum Type{
+    PUB_SUB = 0;
+    SHELL_CMD = 1;
+  }
 }
