@@ -1,6 +1,7 @@
 httpServer:
   port: 8089
   mode: test
+  contextPath: /
 
 storage:
   redisHost: ${REDIS_HOST}

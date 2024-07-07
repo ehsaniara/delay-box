@@ -13,8 +13,9 @@ type Config struct {
 }
 
 type HttpServerConfig struct {
-	Port int
-	Mode string
+	Port        int
+	Mode        string
+	ContextPath string
 }
 
 type StorageConfig struct {
@@ -51,6 +52,7 @@ func GetConfig() *Config {
 func Print(config *Config) {
 	log.Printf("Server port: %d\n", config.HttpServer.Port)
 	log.Printf("Server mode: %s\n", config.HttpServer.Mode)
+	log.Printf("Server context path: %s\n", config.HttpServer.ContextPath)
 	log.Printf("redisHost: %s\n", config.Storage.RedisHost)
 	p := ""
 	if len(config.Storage.RedisPass) > 0 {
@@ -76,8 +78,9 @@ func LoadConfig(path string) (*Config, error) {
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file: %v", err)
 	}
-
+	//to override config
 	viper.SetEnvPrefix("app")
+	_ = viper.BindEnv("httpServer.contextPath", "SERVER_CONTEXT_PATH")
 	_ = viper.BindEnv("storage.redisHost", "REDIS_HOST")
 	_ = viper.BindEnv("storage.redisPass", "REDIS_PASS")
 	_ = viper.BindEnv("kafka.brokers", "BROKERS")
@@ -86,6 +89,5 @@ func LoadConfig(path string) (*Config, error) {
 	if err := viper.Unmarshal(&config); err != nil {
 		return nil, err
 	}
-
 	return &config, nil
 }

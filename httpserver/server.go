@@ -66,11 +66,12 @@ func (s *server) stopServer() {
 }
 
 func (s *server) setupGinRouter() *gin.Engine {
+
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	r.GET("/ping", s.PingHandler)
-	r.GET("/task", s.GetAllTasksHandler)
-	r.POST("/task", s.SetNewTaskHandler)
+	r.GET(fmt.Sprintf("%sping", s.config.HttpServer.ContextPath), s.PingHandler)
+	r.GET(fmt.Sprintf("%stask", s.config.HttpServer.ContextPath), s.GetAllTasksHandler)
+	r.POST(fmt.Sprintf("%stask", s.config.HttpServer.ContextPath), s.SetNewTaskHandler)
 	return r
 }
 
