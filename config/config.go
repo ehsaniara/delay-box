@@ -6,6 +6,10 @@ import (
 	"os"
 )
 
+const (
+	ExecutionTimestamp = "executionTimestamp"
+)
+
 type Config struct {
 	HttpServer HttpServerConfig
 	Storage    StorageConfig

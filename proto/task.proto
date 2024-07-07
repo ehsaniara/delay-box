@@ -6,10 +6,9 @@ package com.github.ehsaniara;
 
 message Task{
   string taskUuid = 1;
-  double executionTimestamp = 2;
-  Type taskType = 3;
-  map<string, bytes> header = 4;
-  bytes pyload = 5;
+  Type taskType = 2;
+  map<string, bytes> header = 3;
+  bytes pyload = 4;
 
   enum Type{
     PUB_SUB = 0;

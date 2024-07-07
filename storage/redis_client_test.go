@@ -14,6 +14,7 @@ import (
 	"go.uber.org/goleak"
 	"google.golang.org/protobuf/proto"
 	"log"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -58,9 +59,8 @@ func Test_taskRedisClient_SetNewTask(t *testing.T) {
 
 	// create task
 	task := &_pb.Task{
-		ExecutionTimestamp: float64(executionTime),
-		Header:             make(map[string][]byte),
-		Pyload:             []byte("some task"),
+		Header: map[string][]byte{config.ExecutionTimestamp: []byte(strconv.FormatInt(executionTime, 10))},
+		Pyload: []byte("some task"),
 	}
 
 	// call the method
@@ -150,9 +150,8 @@ func Test_taskRedisClient_GetAllTasksPagination(t *testing.T) {
 
 	var ts []*_pb.Task
 	ts = append(ts, &_pb.Task{
-		ExecutionTimestamp: float64(executionTime),
-		Header:             make(map[string][]byte),
-		Pyload:             []byte("some task"),
+		Header: map[string][]byte{config.ExecutionTimestamp: []byte(strconv.FormatInt(executionTime, 10))},
+		Pyload: []byte("some task"),
 	})
 
 	tests := []struct {
@@ -336,10 +335,9 @@ func TestConvertByteToTasks(t *testing.T) {
 func TestConvertByteToTasks_ValidProtobufMessages(t *testing.T) {
 	executionTime := time.Now().Add(100 * time.Millisecond).UnixMilli() // Schedule 0.1 seconds from now
 	task := _pb.Task{
-		ExecutionTimestamp: float64(executionTime),
-		Header:             make(map[string][]byte),
-		Pyload:             []byte("----- some task ------"), // length should be grater than 32bit
-		TaskType:           _pb.Task_PUB_SUB,
+		Header:   map[string][]byte{config.ExecutionTimestamp: []byte(strconv.FormatInt(executionTime, 10))},
+		Pyload:   []byte("----- some task ------"), // length should be grater than 32bit
+		TaskType: _pb.Task_PUB_SUB,
 	}
 
 	// Serialize the task into bytes
@@ -366,7 +364,7 @@ func TestConvertByteToTasks_ValidProtobufMessages(t *testing.T) {
 	for i, actualTask := range tasks {
 		assert.Equal(t, expectedTasks[i].TaskType, actualTask.TaskType)
 		assert.Equal(t, expectedTasks[i].TaskUuid, actualTask.TaskUuid)
-		assert.Equal(t, expectedTasks[i].ExecutionTimestamp, actualTask.ExecutionTimestamp)
+		assert.Equal(t, expectedTasks[i].Header, actualTask.Header)
 	}
 
 	// Assert the result
