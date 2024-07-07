@@ -29,3 +29,10 @@ to Get list of pending tasks (First 100 tasks)
 ```shell
 curl "http://localhost:8088/task?offset=100&limit=0"
 ```
+
+
+# General Architecture
+
+<p align="center">
+  <img src="docs/diagram1.png" alt="General Architecture"/>
+</p>
