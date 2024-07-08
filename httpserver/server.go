@@ -131,11 +131,10 @@ func (s *server) runServer(ctx context.Context) {
 }
 
 type Task struct {
-	TaskUuid           string            `json:"taskUuid"`
-	ExecutionTimestamp float64           `json:"executionTimestamp"`
-	TaskType           string            `json:"taskType"`
-	Parameter          map[string]string `json:"parameter,omitempty"`
-	Pyload             string            `json:"pyload"`
+	TaskUuid  string            `json:"taskUuid"`
+	TaskType  string            `json:"taskType"`
+	Parameter map[string]string `json:"parameter,omitempty"`
+	Pyload    string            `json:"pyload"`
 }
 
 func (s *server) PingHandler(c *gin.Context) {
