@@ -15,6 +15,36 @@ import (
 	"time"
 )
 
+func Test_Dispatcher_with_no_header(t *testing.T) {
+	fakeStorage := &storagefakes.FakeTaskStorage{}
+	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	c := config.Config{
+		Storage: config.StorageConfig{
+			SchedulerKeyName: "SchedulerKeyName",
+		},
+		Kafka: config.KafkaConfig{
+			Enabled:            true,
+			SchedulerTopic:     "STT",
+			TaskExecutionTopic: "TET",
+		},
+	}
+
+	// payload
+	// create kafka message from payload
+	newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
+	newScheduler.Dispatcher(&sarama.ConsumerMessage{
+		Key:   []byte(("some Key")),
+		Value: []byte("some payload data"),
+		Topic: "STT",
+	})
+
+	assert.Equal(t, 0, fakeStorage.SetNewTaskCallCount())
+
+}
 func Test_Dispatcher(t *testing.T) {
 	schedulerKeyName := "SchedulerKeyName"
 	taskExecutionTopic := "TET"
@@ -123,8 +153,9 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	tasks = append(tasks, task)
 
 	message := &sarama.ProducerMessage{
-		Topic: c.Kafka.TaskExecutionTopic,
-		Value: sarama.ByteEncoder(task.Pyload),
+		Topic:   c.Kafka.TaskExecutionTopic,
+		Value:   sarama.ByteEncoder(task.Pyload),
+		Headers: nil, // no header sent to Dispatcher
 	}
 
 	fakeStorage.FetchAndRemoveDueTasksReturnsOnCall(0, tasks)
