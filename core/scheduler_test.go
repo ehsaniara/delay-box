@@ -150,6 +150,11 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	encode, err := _message.Value.Encode()
 	assert.NoError(t, err)
 	assert.Equal(t, task.Pyload, encode)
+	assert.Equal(t, len(task.Header), 1)
+	assert.Equal(t, len(task.Header), len(_message.Headers))
+	//for k, v := range task.Header {
+	//	assert.Equal(t, string(task[k]), encode)
+	//}
 }
 
 func Test_scheduler_PublishNewTask(t *testing.T) {

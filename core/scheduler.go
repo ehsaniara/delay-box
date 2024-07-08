@@ -143,9 +143,18 @@ func (s *scheduler) executeDueTasks(dueTasks []*_pb.Task) {
 func (s *scheduler) processTask(task *_pb.Task) {
 	log.Print("--------- task processed ----------")
 
+	headers := make([]sarama.RecordHeader, 0)
+	for k, v := range task.Header {
+		headers = append(headers, sarama.RecordHeader{
+			Key:   []byte(k),
+			Value: v,
+		})
+	}
+
 	message := &sarama.ProducerMessage{
-		Topic: s.config.Kafka.TaskExecutionTopic,
-		Value: sarama.ByteEncoder(task.Pyload),
+		Topic:   s.config.Kafka.TaskExecutionTopic,
+		Value:   sarama.ByteEncoder(task.Pyload),
+		Headers: headers,
 	}
 
 	partition, offset, err := s.producer.SendMessage(message)
