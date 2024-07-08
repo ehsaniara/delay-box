@@ -1,5 +1,8 @@
 package httpserver
 
+// You only need **one** of these per package!
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"context"
 	"encoding/base64"
@@ -17,18 +20,18 @@ import (
 	"time"
 )
 
-// You only need **one** of these per package!
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
-
 type server struct {
-	httpPort    int
-	httpServer  HTTPServer
-	taskStorage storage.TaskStorage
-	scheduler   core.Scheduler
-	config      *config.Config
-	quit        chan struct{}
-	ready       chan bool
-	stop        sync.Once
+	httpPort                 int
+	httpServer               HTTPServer
+	taskStorage              storage.TaskStorage
+	scheduler                core.Scheduler
+	config                   *config.Config
+	quit                     chan struct{}
+	ready                    chan bool
+	stop                     sync.Once
+	stringToTaskType         StringToTaskTypeFn
+	convertParameterToHeader ConvertParameterToHeaderFn
+	convertHeaderToParameter ConvertHeaderToParameterFn
 }
 
 // HTTPServer is an interface that abstracts the http.Server methods needed by our server.
@@ -43,13 +46,16 @@ var _ HTTPServer = (*http.Server)(nil)
 // NewServer should be the last service to be run so K8s know application is fully up
 func NewServer(ctx context.Context, httpServer HTTPServer, taskStorage storage.TaskStorage, scheduler core.Scheduler, config *config.Config) func() {
 	s := &server{
-		httpServer:  httpServer,
-		taskStorage: taskStorage,
-		config:      config,
-		scheduler:   scheduler,
-		quit:        make(chan struct{}),
-		ready:       make(chan bool, 1),
-		httpPort:    config.HttpServer.Port,
+		httpServer:               httpServer,
+		taskStorage:              taskStorage,
+		config:                   config,
+		scheduler:                scheduler,
+		quit:                     make(chan struct{}),
+		ready:                    make(chan bool, 1),
+		httpPort:                 config.HttpServer.Port,
+		stringToTaskType:         stringToTaskType,
+		convertParameterToHeader: convertParameterToHeader,
+		convertHeaderToParameter: convertHeaderToParameter,
 	}
 	go s.runServer(ctx)
 
@@ -128,7 +134,7 @@ type Task struct {
 	TaskUuid           string            `json:"taskUuid"`
 	ExecutionTimestamp float64           `json:"executionTimestamp"`
 	TaskType           string            `json:"taskType"`
-	Header             map[string]string `json:"header"`
+	Parameter          map[string]string `json:"parameter,omitempty"`
 	Pyload             string            `json:"pyload"`
 }
 
@@ -155,11 +161,10 @@ func (s *server) GetAllTasksHandler(c *gin.Context) {
 	var tasks []Task
 	for _, task := range s.taskStorage.GetAllTasksPagination(c.Request.Context(), int32(offset), int32(limit)) {
 		tasks = append(tasks, Task{
-			TaskUuid:           task.TaskUuid,
-			ExecutionTimestamp: task.ExecutionTimestamp,
-			TaskType:           task.TaskType.String(),
-			Header:             ConvertProtoHeaderToHeader(task.Header),
-			Pyload:             base64.StdEncoding.EncodeToString(task.Pyload),
+			TaskUuid:  task.TaskUuid,
+			TaskType:  task.TaskType.String(),
+			Parameter: s.convertHeaderToParameter(task.Header),
+			Pyload:    base64.StdEncoding.EncodeToString(task.Pyload),
 		})
 	}
 	if len(tasks) > 0 {
@@ -178,7 +183,7 @@ func (s *server) SetNewTaskHandler(c *gin.Context) {
 		return
 	}
 
-	taskType, err := StringToTaskType(task.TaskType)
+	taskType, err := s.stringToTaskType(task.TaskType)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -192,11 +197,10 @@ func (s *server) SetNewTaskHandler(c *gin.Context) {
 	}
 
 	pbTask := &_pb.Task{
-		TaskUuid:           task.TaskUuid,
-		ExecutionTimestamp: task.ExecutionTimestamp,
-		TaskType:           taskType,
-		Header:             ConvertHeaderToProtoHeader(task.Header),
-		Pyload:             byteArray,
+		TaskUuid: task.TaskUuid,
+		TaskType: taskType,
+		Header:   s.convertParameterToHeader(task.Parameter),
+		Pyload:   byteArray,
 	}
 
 	// enable to use kafka or direct write to redis
@@ -212,8 +216,11 @@ func (s *server) SetNewTaskHandler(c *gin.Context) {
 	})
 }
 
-// StringToTaskType converts a taskStr to a Task_Type enum.
-func StringToTaskType(taskStr string) (_pb.Task_Type, error) {
+// StringToTaskTypeFn use as injection
+type StringToTaskTypeFn func(taskStr string) (_pb.Task_Type, error)
+
+// stringToTaskType converts a taskStr to a Task_Type enum.
+func stringToTaskType(taskStr string) (_pb.Task_Type, error) {
 	// Look up the enum value by name
 	if enumVal, ok := _pb.Task_Type_value[taskStr]; ok {
 		return _pb.Task_Type(enumVal), nil
@@ -221,8 +228,11 @@ func StringToTaskType(taskStr string) (_pb.Task_Type, error) {
 	return _pb.Task_PUB_SUB, fmt.Errorf("invalid enum value: %s", taskStr)
 }
 
-// ConvertHeaderToProtoHeader return map[string][]byte
-func ConvertHeaderToProtoHeader(header map[string]string) map[string][]byte {
+// ConvertParameterToHeaderFn use as injection
+type ConvertParameterToHeaderFn func(header map[string]string) map[string][]byte
+
+// convertParameterToHeader return map[string][]byte
+func convertParameterToHeader(header map[string]string) map[string][]byte {
 	var pbHeader = make(map[string][]byte)
 	for k, v := range header {
 		byteArray, err := base64.StdEncoding.DecodeString(v)
@@ -235,8 +245,11 @@ func ConvertHeaderToProtoHeader(header map[string]string) map[string][]byte {
 	return pbHeader
 }
 
-// ConvertProtoHeaderToHeader return map[string]string
-func ConvertProtoHeaderToHeader(header map[string][]byte) map[string]string {
+// ConvertHeaderToParameterFn use as injection
+type ConvertHeaderToParameterFn func(header map[string][]byte) map[string]string
+
+// ConvertHeaderToParameter return map[string]string
+func convertHeaderToParameter(header map[string][]byte) map[string]string {
 	var pbHeader = make(map[string]string)
 	for k, v := range header {
 		// Encode the serialized protobuf message to a Base64 encoded string

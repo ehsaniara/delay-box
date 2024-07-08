@@ -10,6 +10,7 @@ import (
 	"github.com/ehsaniara/scheduler/storage/storagefakes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -48,7 +49,7 @@ func Test_Dispatcher(t *testing.T) {
 	newScheduler.Dispatcher(&sarama.ConsumerMessage{
 		Key: []byte(key),
 		Headers: []*sarama.RecordHeader{{
-			Key:   []byte("executionTimestamp"),
+			Key:   []byte(config.ExecutionTimestamp),
 			Value: []byte(fmt.Sprintf("%v", executionTime)),
 		}},
 		Value: payloadMarshal,
@@ -56,20 +57,13 @@ func Test_Dispatcher(t *testing.T) {
 	})
 
 	task := &_pb.Task{
-		ExecutionTimestamp: executionTime,
-		Header:             make(map[string][]byte),
-		Pyload:             payloadMarshal,
+		Header: map[string][]byte{config.ExecutionTimestamp: []byte(fmt.Sprintf("%v", executionTime))},
+		Pyload: payloadMarshal,
 	}
-
-	// create task from kafka message
-	//taskMarshal, err := proto.Marshal(task)
-	//assert.NoError(t, err)
-	//assert.NotNil(t, taskMarshal)
 
 	_ctx, _task := fakeStorage.SetNewTaskArgsForCall(0)
 	assert.Equal(t, ctx, _ctx)
 	assert.Equal(t, task.Header, _task.Header)
-	assert.Equal(t, task.ExecutionTimestamp, _task.ExecutionTimestamp)
 	assert.Equal(t, task.Pyload, _task.Pyload)
 
 }
@@ -122,9 +116,8 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	// create task
 	var tasks []*_pb.Task
 	task := &_pb.Task{
-		ExecutionTimestamp: float64(executionTime),
-		Header:             make(map[string][]byte),
-		Pyload:             []byte("some task"),
+		Header: map[string][]byte{config.ExecutionTimestamp: []byte(strconv.FormatInt(executionTime, 10))},
+		Pyload: []byte("some task"),
 	}
 
 	tasks = append(tasks, task)
@@ -182,18 +175,16 @@ func Test_scheduler_PublishNewTask(t *testing.T) {
 	}
 
 	// 2 seconds from now
-	executionTime := float64(time.Now().Add(2 * time.Second).UnixMilli())
+	executionTime := time.Now().Add(2 * time.Second).UnixMilli()
 
 	payloadMarshal := []byte("some payload data")
 
 	task := &_pb.Task{
-		ExecutionTimestamp: executionTime,
-		Header:             make(map[string][]byte),
-		Pyload:             payloadMarshal,
+		Header: map[string][]byte{config.ExecutionTimestamp: []byte(strconv.FormatInt(executionTime, 10))},
+		Pyload: payloadMarshal,
 	}
 	// create kafka message from payload
 	newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
 	newScheduler.PublishNewTask(task)
 	assert.Equal(t, 1, fakeSyncProducer.SendMessageCallCount())
-
 }

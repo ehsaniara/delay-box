@@ -111,10 +111,9 @@ func TestPositiveIntegrationTest(t *testing.T) {
 	// Schedule 1/4 seconds from now
 	executionTime := float64(time.Now().Add(time.Millisecond * 250).UnixMilli())
 	task := _task.Task{
-		TaskUuid:           uuid.NewString(),
-		ExecutionTimestamp: executionTime,
-		Header:             make(map[string][]byte),
-		Pyload:             []byte("some payload data"),
+		TaskUuid: uuid.NewString(),
+		Header:   map[string][]byte{config.ExecutionTimestamp: []byte(fmt.Sprintf("%v", executionTime))},
+		Pyload:   []byte("some payload data"),
 	}
 	m, e := proto.Marshal(&task)
 	assert.NoError(t, e)
@@ -167,7 +166,6 @@ func consumerForTaskExecutionTopic(t *testing.T, ctx context.Context, wg *sync.W
 			err := proto.Unmarshal(message.Value, &task)
 			assert.NoError(t, err)
 
-			assert.Equal(t, expectedTask.ExecutionTimestamp, task.ExecutionTimestamp)
 			assert.Equal(t, expectedTask.TaskType, task.TaskType)
 			assert.Equal(t, expectedTask.TaskUuid, task.TaskUuid)
 

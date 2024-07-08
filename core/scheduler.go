@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/ehsaniara/scheduler/config"
 	"github.com/ehsaniara/scheduler/kafka"
@@ -28,8 +27,6 @@ type scheduler struct {
 	config   *config.Config
 }
 
-const headerName = "executionTimestamp"
-
 func NewScheduler(ctx context.Context, storage storage.TaskStorage, producer kafka.SyncProducer, config *config.Config) Scheduler {
 	s := &scheduler{
 		quit:     make(chan struct{}),
@@ -50,10 +47,10 @@ func (s *scheduler) PublishNewTask(task *_pb.Task) {
 	log.Print("--------- publish task ----------")
 
 	headers := make([]sarama.RecordHeader, 0)
-	if task.ExecutionTimestamp > 0 {
+	for k, v := range task.Header {
 		headers = append(headers, sarama.RecordHeader{
-			Key:   []byte(headerName),
-			Value: []byte(fmt.Sprintf("%f", task.ExecutionTimestamp)),
+			Key:   []byte(k),
+			Value: v,
 		})
 	}
 
@@ -75,28 +72,35 @@ func (s *scheduler) Dispatcher(message *sarama.ConsumerMessage) {
 	log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s\n", string(message.Value), message.Timestamp, message.Topic)
 
 	if message.Headers == nil {
+		log.Printf("Headers are missing")
 		return
-		//message.Headers = make([]sarama.RecordHeader, 0, 1)
 	}
 
+	header := make(map[string][]byte)
+
 	// if executionTimestamp missing, it will be run right away
-	var executionTimestamp float64 = 0
-	for _, header := range message.Headers {
-		if header != nil && string(header.Key) == headerName {
-			floatVal, _ := strconv.ParseFloat(string(header.Value), 64)
-			executionTimestamp = floatVal
+	hasExecutionTimestamp := false
+	for _, h := range message.Headers {
+		header[string(h.Key)] = h.Value
+
+		if string(h.Key) == config.ExecutionTimestamp {
+			hasExecutionTimestamp = true
 		}
 	}
-	if executionTimestamp == 0 {
+
+	if !hasExecutionTimestamp {
 		unixMilli := time.Now().UnixMilli()
-		log.Printf("executionTimestamp is missing the message header so it's : %v", unixMilli)
-		executionTimestamp = float64(unixMilli)
+		log.Printf("executionTimestamp is missing the message h so it's : %v", unixMilli)
+		header[config.ExecutionTimestamp] = []byte(strconv.FormatInt(unixMilli, 10))
+	}
+
+	for _, h := range message.Headers {
+		header[string(h.Key)] = h.Value
 	}
 
 	task := _pb.Task{
-		ExecutionTimestamp: executionTimestamp,
-		Header:             make(map[string][]byte),
-		Pyload:             message.Value,
+		Header: header,
+		Pyload: message.Value,
 	}
 	s.storage.SetNewTask(s.ctx, &task)
 }
