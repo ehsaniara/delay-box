@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/ehsaniara/scheduler/config"
 	"github.com/ehsaniara/scheduler/kafka"
@@ -14,26 +16,32 @@ import (
 )
 
 type Scheduler interface {
+	GetAllTasksPagination(ctx context.Context, offset, limit int32) []*_pb.Task
+	Schedule(taskType, pyload string, header map[string]string) error
 	PublishNewTask(task *_pb.Task)
 	Dispatcher(message *sarama.ConsumerMessage)
 	Stop()
 }
 
 type scheduler struct {
-	quit     chan struct{}
-	storage  storage.TaskStorage
-	producer kafka.SyncProducer
-	ctx      context.Context
-	config   *config.Config
+	quit                     chan struct{}
+	storage                  storage.TaskStorage
+	producer                 kafka.SyncProducer
+	ctx                      context.Context
+	config                   *config.Config
+	stringToTaskType         StringToTaskTypeFn
+	convertParameterToHeader ConvertParameterToHeaderFn
 }
 
 func NewScheduler(ctx context.Context, storage storage.TaskStorage, producer kafka.SyncProducer, config *config.Config) Scheduler {
 	s := &scheduler{
-		quit:     make(chan struct{}),
-		storage:  storage,
-		producer: producer,
-		ctx:      ctx,
-		config:   config,
+		quit:                     make(chan struct{}),
+		storage:                  storage,
+		producer:                 producer,
+		ctx:                      ctx,
+		config:                   config,
+		stringToTaskType:         stringToTaskType,
+		convertParameterToHeader: convertParameterToHeader,
 	}
 
 	log.Printf("✔️ Scheduler is waiting to start..")
@@ -41,6 +49,40 @@ func NewScheduler(ctx context.Context, storage storage.TaskStorage, producer kaf
 	log.Printf("✔️ Scheduler is started.")
 
 	return s
+}
+
+// GetAllTasksPagination gat all tasks using ListOfAllTaskScript
+func (s *scheduler) GetAllTasksPagination(ctx context.Context, offset, limit int32) []*_pb.Task {
+	return s.storage.GetAllTasksPagination(ctx, offset, limit)
+}
+
+func (s *scheduler) Schedule(taskType, pyload string, header map[string]string) error {
+	tt, err := s.stringToTaskType(taskType)
+	if err != nil {
+		return err
+	}
+
+	byteArray, err := base64.StdEncoding.DecodeString(pyload)
+	if err != nil {
+		fmt.Printf("Error decoding base64 string: %v\n", err)
+		return err
+	}
+
+	pbTask := &_pb.Task{
+		TaskType: tt,
+		Header:   s.convertParameterToHeader(header),
+		Pyload:   byteArray,
+	}
+
+	// enable to use kafka or direct write to redis
+	// recommended to enable kafka in high write traffic
+	if s.config.Kafka.Enabled {
+		s.PublishNewTask(pbTask)
+	} else {
+		s.storage.SetNewTask(s.ctx, pbTask)
+	}
+
+	return nil
 }
 
 func (s *scheduler) PublishNewTask(task *_pb.Task) {
@@ -117,7 +159,8 @@ func (s *scheduler) Serve(ctx context.Context) {
 				log.Println("Scheduler stopped by signal.")
 				return
 			default:
-				time.Sleep(200 * time.Millisecond) // Poll every 200 millisecond
+				var f = time.Duration(s.config.Frequency)
+				time.Sleep(f * time.Millisecond) // Poll every 100 millisecond
 				//it should call once to release the wg.Wait()
 				once.Do(func() {
 					wg.Done()
@@ -169,4 +212,33 @@ func (s *scheduler) Stop() {
 	log.Println("⏳  Scheduler Stopping...")
 	close(s.quit)
 	log.Println("👍 Scheduler Stopped.")
+}
+
+// StringToTaskTypeFn use as injection
+type StringToTaskTypeFn func(taskStr string) (_pb.Task_Type, error)
+
+// stringToTaskType converts a taskStr to a Task_Type enum.
+func stringToTaskType(taskStr string) (_pb.Task_Type, error) {
+	// Look up the enum value by name
+	if enumVal, ok := _pb.Task_Type_value[taskStr]; ok {
+		return _pb.Task_Type(enumVal), nil
+	}
+	return _pb.Task_PUB_SUB, fmt.Errorf("invalid enum value: %s", taskStr)
+}
+
+// ConvertParameterToHeaderFn use as injection
+type ConvertParameterToHeaderFn func(header map[string]string) map[string][]byte
+
+// convertParameterToHeader return map[string][]byte
+func convertParameterToHeader(header map[string]string) map[string][]byte {
+	var pbHeader = make(map[string][]byte)
+	for k, v := range header {
+		byteArray, err := base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			log.Printf("Error decoding base64 string: %v\n", err)
+			continue
+		}
+		pbHeader[k] = byteArray
+	}
+	return pbHeader
 }

@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"github.com/ehsaniara/scheduler/config"
 	"github.com/ehsaniara/scheduler/core"
-	_pb "github.com/ehsaniara/scheduler/proto"
-	"github.com/ehsaniara/scheduler/storage"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -23,14 +21,11 @@ import (
 type server struct {
 	httpPort                 int
 	httpServer               HTTPServer
-	taskStorage              storage.TaskStorage
 	scheduler                core.Scheduler
 	config                   *config.Config
 	quit                     chan struct{}
 	ready                    chan bool
 	stop                     sync.Once
-	stringToTaskType         StringToTaskTypeFn
-	convertParameterToHeader ConvertParameterToHeaderFn
 	convertHeaderToParameter ConvertHeaderToParameterFn
 }
 
@@ -44,17 +39,14 @@ type HTTPServer interface {
 var _ HTTPServer = (*http.Server)(nil)
 
 // NewServer should be the last service to be run so K8s know application is fully up
-func NewServer(ctx context.Context, httpServer HTTPServer, taskStorage storage.TaskStorage, scheduler core.Scheduler, config *config.Config) func() {
+func NewServer(ctx context.Context, httpServer HTTPServer, scheduler core.Scheduler, config *config.Config) func() {
 	s := &server{
 		httpServer:               httpServer,
-		taskStorage:              taskStorage,
 		config:                   config,
 		scheduler:                scheduler,
 		quit:                     make(chan struct{}),
 		ready:                    make(chan bool, 1),
 		httpPort:                 config.HttpServer.Port,
-		stringToTaskType:         stringToTaskType,
-		convertParameterToHeader: convertParameterToHeader,
 		convertHeaderToParameter: convertHeaderToParameter,
 	}
 	go s.runServer(ctx)
@@ -158,7 +150,7 @@ func (s *server) GetAllTasksHandler(c *gin.Context) {
 	}
 
 	var tasks []Task
-	for _, task := range s.taskStorage.GetAllTasksPagination(c.Request.Context(), int32(offset), int32(limit)) {
+	for _, task := range s.scheduler.GetAllTasksPagination(c.Request.Context(), int32(offset), int32(limit)) {
 		tasks = append(tasks, Task{
 			TaskUuid:  task.TaskUuid,
 			TaskType:  task.TaskType.String(),
@@ -182,66 +174,16 @@ func (s *server) SetNewTaskHandler(c *gin.Context) {
 		return
 	}
 
-	taskType, err := s.stringToTaskType(task.TaskType)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	byteArray, err := base64.StdEncoding.DecodeString(task.Pyload)
+	err := s.scheduler.Schedule(task.TaskUuid, task.TaskType, task.Parameter)
 	if err != nil {
 		fmt.Printf("Error decoding base64 string: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	pbTask := &_pb.Task{
-		TaskUuid: task.TaskUuid,
-		TaskType: taskType,
-		Header:   s.convertParameterToHeader(task.Parameter),
-		Pyload:   byteArray,
-	}
-
-	// enable to use kafka or direct write to redis
-	// recommended to enable kafka in high write traffic
-	if s.config.Kafka.Enabled {
-		s.scheduler.PublishNewTask(pbTask)
-	} else {
-		s.taskStorage.SetNewTask(c.Request.Context(), pbTask)
-	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"message": "task created",
 	})
-}
-
-// StringToTaskTypeFn use as injection
-type StringToTaskTypeFn func(taskStr string) (_pb.Task_Type, error)
-
-// stringToTaskType converts a taskStr to a Task_Type enum.
-func stringToTaskType(taskStr string) (_pb.Task_Type, error) {
-	// Look up the enum value by name
-	if enumVal, ok := _pb.Task_Type_value[taskStr]; ok {
-		return _pb.Task_Type(enumVal), nil
-	}
-	return _pb.Task_PUB_SUB, fmt.Errorf("invalid enum value: %s", taskStr)
-}
-
-// ConvertParameterToHeaderFn use as injection
-type ConvertParameterToHeaderFn func(header map[string]string) map[string][]byte
-
-// convertParameterToHeader return map[string][]byte
-func convertParameterToHeader(header map[string]string) map[string][]byte {
-	var pbHeader = make(map[string][]byte)
-	for k, v := range header {
-		byteArray, err := base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			log.Printf("Error decoding base64 string: %v\n", err)
-			continue
-		}
-		pbHeader[k] = byteArray
-	}
-	return pbHeader
 }
 
 // ConvertHeaderToParameterFn use as injection

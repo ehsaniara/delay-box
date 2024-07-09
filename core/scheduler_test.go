@@ -10,6 +10,7 @@ import (
 	"github.com/ehsaniara/scheduler/storage/storagefakes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -108,6 +109,7 @@ func Test_Serve(t *testing.T) {
 	defer cancel()
 
 	c := config.Config{
+		Frequency: int32(10),
 		Storage: config.StorageConfig{
 			SchedulerKeyName: schedulerKeyName,
 		},
@@ -132,6 +134,7 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	defer cancel()
 
 	c := config.Config{
+		Frequency: int32(50),
 		Storage: config.StorageConfig{
 			SchedulerKeyName: schedulerKeyName,
 		},
@@ -141,7 +144,8 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 		},
 	}
 
-	executionTime := time.Now().Add(100 * time.Millisecond).UnixMilli() // Schedule 0.1 seconds from now
+	f1 := time.Duration(c.Frequency)
+	executionTime := time.Now().Add(f1 * time.Millisecond).UnixMilli() // Schedule 0.1 seconds from now
 
 	// create task
 	var tasks []*_pb.Task
@@ -170,7 +174,8 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	// in the task loop
 	require.Equal(t, 1, fakeStorage.FetchAndRemoveDueTasksCallCount())
 	//after task's timer executed
-	time.Sleep(250 * time.Millisecond)
+	f2 := time.Duration(c.Frequency + 5)
+	time.Sleep(f2 * time.Millisecond)
 	require.Equal(t, 2, fakeStorage.FetchAndRemoveDueTasksCallCount())
 
 	assert.Equal(t, 1, fakeSyncProducer.SendMessageCallCount())
@@ -223,4 +228,23 @@ func Test_scheduler_PublishNewTask(t *testing.T) {
 	newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
 	newScheduler.PublishNewTask(task)
 	assert.Equal(t, 1, fakeSyncProducer.SendMessageCallCount())
+}
+
+func Test_convertParameterToHeader(t *testing.T) {
+	tests := []struct {
+		name string
+		args map[string]string
+		want map[string][]byte
+	}{
+		{name: "positive test", args: map[string]string{"test": "dGVzdA=="}, want: map[string][]byte{"test": []byte("test")}},
+		{name: "empty arg", args: make(map[string]string), want: make(map[string][]byte)},
+		{name: "wrong base64 arg", args: map[string]string{"+++": "+++"}, want: make(map[string][]byte)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertParameterToHeader(tt.args); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("convertParameterToHeader() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
