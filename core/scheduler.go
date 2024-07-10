@@ -18,30 +18,30 @@ import (
 type Scheduler interface {
 	GetAllTasksPagination(ctx context.Context, offset, limit int32) []*_pb.Task
 	Schedule(taskType, pyload string, header map[string]string) error
-	PublishNewTask(task *_pb.Task)
+	PublishNewTaskToKafka(task *_pb.Task)
 	Dispatcher(message *sarama.ConsumerMessage)
 	Stop()
 }
 
 type scheduler struct {
-	quit                     chan struct{}
-	storage                  storage.TaskStorage
-	producer                 kafka.SyncProducer
-	ctx                      context.Context
-	config                   *config.Config
-	stringToTaskType         StringToTaskTypeFn
-	convertParameterToHeader ConvertParameterToHeaderFn
+	quit                         chan struct{}
+	storage                      storage.TaskStorage
+	producer                     kafka.SyncProducer
+	ctx                          context.Context
+	config                       *config.Config
+	stringToTaskType             StringToTaskTypeFn
+	convertParameterToTaskHeader ConvertParameterToTaskHeaderFn
 }
 
 func NewScheduler(ctx context.Context, storage storage.TaskStorage, producer kafka.SyncProducer, config *config.Config) Scheduler {
 	s := &scheduler{
-		quit:                     make(chan struct{}),
-		storage:                  storage,
-		producer:                 producer,
-		ctx:                      ctx,
-		config:                   config,
-		stringToTaskType:         stringToTaskType,
-		convertParameterToHeader: convertParameterToHeader,
+		quit:                         make(chan struct{}),
+		storage:                      storage,
+		producer:                     producer,
+		ctx:                          ctx,
+		config:                       config,
+		stringToTaskType:             stringToTaskType,
+		convertParameterToTaskHeader: convertParameterToTaskHeader,
 	}
 
 	log.Printf("✔️ Scheduler is waiting to start..")
@@ -68,25 +68,34 @@ func (s *scheduler) Schedule(taskType, pyload string, header map[string]string) 
 		return err
 	}
 
+	// assigning to header
+	var headerMap map[string][]byte = nil
+	if header != nil && len(header) > 0 {
+		headerMap = s.convertParameterToTaskHeader(header)
+	} else {
+		log.Println("no header")
+	}
+
 	pbTask := &_pb.Task{
 		TaskType: tt,
-		Header:   s.convertParameterToHeader(header),
+		Header:   headerMap,
 		Pyload:   byteArray,
 	}
 
 	// enable to use kafka or direct write to redis
 	// recommended to enable kafka in high write traffic
 	if s.config.Kafka.Enabled {
-		s.PublishNewTask(pbTask)
+		s.PublishNewTaskToKafka(pbTask)
 	} else {
-		s.storage.SetNewTask(s.ctx, pbTask)
+		// not implemented
 	}
 
 	return nil
 }
 
-func (s *scheduler) PublishNewTask(task *_pb.Task) {
-	log.Print("--------- publish task ----------")
+// PublishNewTaskToKafka tp publish new task into SchedulerTopic topic so later on it will be stored in redis.
+func (s *scheduler) PublishNewTaskToKafka(task *_pb.Task) {
+	log.Print("--------- publish new task ----------")
 
 	headers := make([]sarama.RecordHeader, 0)
 	for k, v := range task.Header {
@@ -102,12 +111,11 @@ func (s *scheduler) PublishNewTask(task *_pb.Task) {
 		Value:   sarama.ByteEncoder(task.Pyload),
 	}
 
-	partition, offset, err := s.producer.SendMessage(message)
+	_, _, err := s.producer.SendMessage(message)
 	if err != nil {
 		log.Panicf("❌  Producer err: %v", err)
 		return
 	}
-	log.Printf("p:%d o:%d", partition, offset)
 }
 
 func (s *scheduler) Dispatcher(message *sarama.ConsumerMessage) {
@@ -132,7 +140,7 @@ func (s *scheduler) Dispatcher(message *sarama.ConsumerMessage) {
 
 	if !hasExecutionTimestamp {
 		unixMilli := time.Now().UnixMilli()
-		log.Printf("executionTimestamp is missing the message h so it's : %v", unixMilli)
+		log.Printf("executionTimestamp is missing the message header so it's: %v", unixMilli)
 		header[config.ExecutionTimestamp] = []byte(strconv.FormatInt(unixMilli, 10))
 	}
 
@@ -143,6 +151,7 @@ func (s *scheduler) Dispatcher(message *sarama.ConsumerMessage) {
 	task := _pb.Task{
 		Header: header,
 		Pyload: message.Value,
+		Status: _pb.Task_SCHEDULED,
 	}
 	s.storage.SetNewTask(s.ctx, &task)
 }
@@ -186,6 +195,7 @@ func (s *scheduler) executeDueTasks(dueTasks []*_pb.Task) {
 func (s *scheduler) processTask(task *_pb.Task) {
 	log.Print("--------- task processed ----------")
 
+	task.Status = _pb.Task_PROCESSING
 	headers := make([]sarama.RecordHeader, 0)
 	for k, v := range task.Header {
 		headers = append(headers, sarama.RecordHeader{
@@ -202,6 +212,8 @@ func (s *scheduler) processTask(task *_pb.Task) {
 
 	partition, offset, err := s.producer.SendMessage(message)
 	if err != nil {
+		// be added in DLQ
+		task.Status = _pb.Task_FAILED
 		log.Panicf("❌  Producer err: %v", err)
 		return
 	}
@@ -218,27 +230,22 @@ func (s *scheduler) Stop() {
 type StringToTaskTypeFn func(taskStr string) (_pb.Task_Type, error)
 
 // stringToTaskType converts a taskStr to a Task_Type enum.
-func stringToTaskType(taskStr string) (_pb.Task_Type, error) {
+func stringToTaskType(taskTypeStr string) (_pb.Task_Type, error) {
 	// Look up the enum value by name
-	if enumVal, ok := _pb.Task_Type_value[taskStr]; ok {
+	if enumVal, ok := _pb.Task_Type_value[taskTypeStr]; ok {
 		return _pb.Task_Type(enumVal), nil
 	}
-	return _pb.Task_PUB_SUB, fmt.Errorf("invalid enum value: %s", taskStr)
+	return _pb.Task_PUB_SUB, fmt.Errorf("invalid enum value: %s", taskTypeStr)
 }
 
-// ConvertParameterToHeaderFn use as injection
-type ConvertParameterToHeaderFn func(header map[string]string) map[string][]byte
+// ConvertParameterToTaskHeaderFn use as injection
+type ConvertParameterToTaskHeaderFn func(header map[string]string) map[string][]byte
 
-// convertParameterToHeader return map[string][]byte
-func convertParameterToHeader(header map[string]string) map[string][]byte {
+// convertParameterToTaskHeader return map[string][]byte
+func convertParameterToTaskHeader(header map[string]string) map[string][]byte {
 	var pbHeader = make(map[string][]byte)
 	for k, v := range header {
-		byteArray, err := base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			log.Printf("Error decoding base64 string: %v\n", err)
-			continue
-		}
-		pbHeader[k] = byteArray
+		pbHeader[k] = []byte(v)
 	}
 	return pbHeader
 }
