@@ -44,8 +44,8 @@ func Test_Dispatcher_with_no_header(t *testing.T) {
 	})
 
 	assert.Equal(t, 0, fakeStorage.SetNewTaskCallCount())
-
 }
+
 func Test_Dispatcher(t *testing.T) {
 	schedulerKeyName := "SchedulerKeyName"
 	taskExecutionTopic := "TET"
@@ -69,7 +69,7 @@ func Test_Dispatcher(t *testing.T) {
 	}
 
 	// 2 seconds from now
-	executionTime := float64(time.Now().Add(2 * time.Second).UnixMilli())
+	executionTime := time.Now().Add(2 * time.Second).UnixMilli()
 
 	// payload
 	key := "some Key"
@@ -81,7 +81,7 @@ func Test_Dispatcher(t *testing.T) {
 		Key: []byte(key),
 		Headers: []*sarama.RecordHeader{{
 			Key:   []byte(config.ExecutionTimestamp),
-			Value: []byte(fmt.Sprintf("%v", executionTime)),
+			Value: []byte(fmt.Sprintf("%d", executionTime)),
 		}},
 		Value: payloadMarshal,
 		Topic: schedulerTopic,

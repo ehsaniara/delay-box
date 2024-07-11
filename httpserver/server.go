@@ -64,7 +64,6 @@ func (s *server) stopServer() {
 }
 
 func (s *server) setupGinRouter() *gin.Engine {
-
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.GET(fmt.Sprintf("%sping", s.config.HttpServer.ContextPath), s.PingHandler)

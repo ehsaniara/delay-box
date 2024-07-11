@@ -103,9 +103,11 @@ func TestHttpBasedIntegrationTest(t *testing.T) {
 	assert.Equal(t, "[]", bodyString)
 
 	executionTimestamp := time.Now().Add(time.Second).UnixMilli()
-	// add short 5 tasks
-	wg.Add(5)
-	for i := 0; i < 5; i++ {
+
+	totalTasks := 10
+	// add short 10 tasks
+	wg.Add(totalTasks)
+	for i := 0; i < totalTasks; i++ {
 		go func() {
 			defer wg.Done()
 			payload := fmt.Sprintf(`{"taskType":"PUB_SUB","parameter":{"executionTimestamp":"%d"},"pyload":"VGVzdCBKYXkK"}`, executionTimestamp)
@@ -120,7 +122,7 @@ func TestHttpBasedIntegrationTest(t *testing.T) {
 		}()
 	}
 	// gress period to publish the task
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	// then check they are there
 	res2, err := http.Get(fmt.Sprintf("http://localhost:%d/task", c.HttpServer.Port))
 	assert.NoError(t, err)
@@ -130,10 +132,21 @@ func TestHttpBasedIntegrationTest(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	assert.Equal(t, 10, len(task))
-
+	assert.Equal(t, totalTasks, len(task))
 	_ = res2.Body.Close()
 
+	// wait to be executed
+	time.Sleep(1500 * time.Millisecond)
+
+	res3, err := http.Get(fmt.Sprintf("http://localhost:%d/task", c.HttpServer.Port))
+	assert.NoError(t, err)
+	bodyBytes2, err := io.ReadAll(res3.Body)
+
+	bodyString2 := string(bodyBytes2)
+	_ = res3.Body.Close()
+	assert.Equal(t, "[]", bodyString2)
+
+	// done
 	wg.Wait()
 	fmt.Println("All waitGroups done")
 }

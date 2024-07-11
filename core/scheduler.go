@@ -129,17 +129,10 @@ func (s *scheduler) Dispatcher(message *sarama.ConsumerMessage) {
 	header := make(map[string][]byte)
 
 	// if executionTimestamp missing, it will be run right away
-	hasExecutionTimestamp := false
-	for _, h := range message.Headers {
-		header[string(h.Key)] = h.Value
+	executionTimestamp := getExecutionTimestamp(message)
 
-		if string(h.Key) == config.ExecutionTimestamp {
-			hasExecutionTimestamp = true
-		}
-	}
-
-	if !hasExecutionTimestamp {
-		unixMilli := time.Now().UnixMilli()
+	unixMilli := time.Now().UnixMilli()
+	if executionTimestamp == 0 {
 		log.Printf("executionTimestamp is missing the message header so it's: %v", unixMilli)
 		header[config.ExecutionTimestamp] = []byte(strconv.FormatInt(unixMilli, 10))
 	}
@@ -148,12 +141,36 @@ func (s *scheduler) Dispatcher(message *sarama.ConsumerMessage) {
 		header[string(h.Key)] = h.Value
 	}
 
+	log.Printf("scheduled task to be run in: %v ms\n", executionTimestamp-unixMilli)
+
 	task := _pb.Task{
 		Header: header,
 		Pyload: message.Value,
 		Status: _pb.Task_SCHEDULED,
 	}
 	s.storage.SetNewTask(s.ctx, &task)
+}
+
+func getExecutionTimestamp(message *sarama.ConsumerMessage) int64 {
+	if message.Headers == nil || len(message.Headers) == 0 {
+		return 0
+	}
+
+	for _, h := range message.Headers {
+
+		// already has ExecutionTimestamp
+		if string(h.Key) == config.ExecutionTimestamp {
+			str := string(h.Value)
+			convert, err := strconv.ParseInt(str, 10, 64)
+			if err != nil {
+				log.Printf("ExecutionTimestamp convert err: %v value:%v\n", err, str)
+				return 0
+			}
+
+			return convert
+		}
+	}
+	return 0
 }
 
 func (s *scheduler) Serve(ctx context.Context) {
@@ -193,7 +210,14 @@ func (s *scheduler) executeDueTasks(dueTasks []*_pb.Task) {
 }
 
 func (s *scheduler) processTask(task *_pb.Task) {
-	log.Print("--------- task processed ----------")
+	for k, bytes := range task.Header {
+		if k == config.ExecutionTimestamp {
+			str := string(bytes)
+			convert, _ := strconv.ParseInt(str, 10, 64)
+			unixMilli := time.Now().UnixMilli()
+			log.Printf("--------- task processed ----------> %d", convert-unixMilli)
+		}
+	}
 
 	task.Status = _pb.Task_PROCESSING
 	headers := make([]sarama.RecordHeader, 0)
