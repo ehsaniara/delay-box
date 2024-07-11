@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/ehsaniara/scheduler/config"
@@ -246,4 +247,48 @@ func Test_convertParameterToHeader(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_scheduler_Schedule(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	fakeStorage := &storagefakes.FakeTaskStorage{}
+	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
+	c := &config.Config{
+		Kafka: config.KafkaConfig{
+			Enabled: true,
+		},
+		Frequency: 100,
+	}
+
+	header := map[string]string{config.ExecutionTimestamp: fmt.Sprintf("%d", time.Now().Add(time.Second).UnixMilli())}
+	pyloadStr := "VGVzdCBKYXkK"
+	taskType := "PUB_SUB"
+
+	newScheduler := &scheduler{
+		quit:     make(chan struct{}),
+		storage:  fakeStorage,
+		producer: fakeSyncProducer,
+		ctx:      ctx,
+		config:   c,
+		stringToTaskType: func(_taskStr string) (_pb.Task_Type, error) {
+			assert.Equal(t, taskType, _taskStr)
+			return stringToTaskType(_taskStr)
+		},
+		convertParameterToTaskHeader: func(_header map[string]string) map[string][]byte {
+			assert.Equal(t, header, _header)
+			return convertParameterToTaskHeader(_header)
+		},
+	}
+
+	err := newScheduler.Schedule(taskType, pyloadStr, header)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, fakeSyncProducer.SendMessageCallCount())
+
+	_call := fakeSyncProducer.SendMessageArgsForCall(0)
+	decodeByte, err := base64.StdEncoding.DecodeString(pyloadStr)
+	assert.NoError(t, err)
+
+	assert.Equal(t, sarama.ByteEncoder(decodeByte), _call.Value)
 }
