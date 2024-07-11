@@ -64,7 +64,6 @@ func (s *server) stopServer() {
 }
 
 func (s *server) setupGinRouter() *gin.Engine {
-
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.GET(fmt.Sprintf("%sping", s.config.HttpServer.ContextPath), s.PingHandler)
@@ -127,6 +126,7 @@ type Task struct {
 	TaskType  string            `json:"taskType"`
 	Parameter map[string]string `json:"parameter,omitempty"`
 	Pyload    string            `json:"pyload"`
+	Status    string            `json:"status"`
 }
 
 func (s *server) PingHandler(c *gin.Context) {
@@ -138,15 +138,17 @@ func (s *server) GetAllTasksHandler(c *gin.Context) {
 	offsetStr := c.Query("offset")
 	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
-		c.String(http.StatusBadRequest, "offset is invalid")
-		return
+		//c.String(http.StatusBadRequest, "invalid url offset")
+		log.Println("invalid url offset, setting it to default value: 100")
+		offset = 100
 	}
 
 	limitStr := c.Query("limit")
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil {
-		c.String(http.StatusBadRequest, "limit is invalid")
-		return
+		//c.String(http.StatusBadRequest, "invalid url limit")
+		log.Println("invalid url limit, setting it to default value: 0")
+		limit = 0
 	}
 
 	var tasks []Task
@@ -174,7 +176,7 @@ func (s *server) SetNewTaskHandler(c *gin.Context) {
 		return
 	}
 
-	err := s.scheduler.Schedule(task.TaskUuid, task.TaskType, task.Parameter)
+	err := s.scheduler.Schedule(task.TaskType, task.Pyload, task.Parameter)
 	if err != nil {
 		fmt.Printf("Error decoding base64 string: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

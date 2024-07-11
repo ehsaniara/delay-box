@@ -5,7 +5,6 @@ package storage
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"github.com/ehsaniara/scheduler/config"
 	"github.com/ehsaniara/scheduler/interfaces"
@@ -14,7 +13,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/proto"
 	"log"
-	"math"
+	"strconv"
 	"time"
 )
 
@@ -92,19 +91,28 @@ func (c *taskRedisClient) SetNewTask(ctx context.Context, task *_pb.Task) {
 		return
 	}
 
-	//ExecutionTimestamp
-	var executionTimestamp float64
-	for k, v := range task.Header {
-		if k == config.ExecutionTimestamp {
-			bits := binary.LittleEndian.Uint64(v)
-			executionTimestamp = math.Float64frombits(bits)
-		}
-	}
-
 	c.rdb.ZAdd(ctx, c.config.Storage.SchedulerKeyName, redis.Z{
-		Score:  executionTimestamp,
+		Score:  getExecutionTimestamp(task),
 		Member: marshal,
 	})
+}
+
+func getExecutionTimestamp(task *_pb.Task) float64 {
+	if task.Header == nil || len(task.Header) == 0 {
+		return 0
+	}
+
+	//ExecutionTimestamp
+	for k, v := range task.Header {
+		if k == config.ExecutionTimestamp {
+			floatVal, err := strconv.ParseFloat(string(v), 64)
+			if err != nil {
+				return 0
+			}
+			return floatVal
+		}
+	}
+	return 0
 }
 
 const ListOfAllTaskScriptThenRemove = `

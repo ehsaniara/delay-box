@@ -15,4 +15,11 @@ message Task{
     PUB_SUB = 0;
     SHELL_CMD = 1;
   }
+
+  enum Status{
+    SCHEDULED = 0;
+    PENDING = 1;
+    PROCESSING = 2;
+    FAILED = 3;
+  }
 }
