@@ -22,13 +22,15 @@ it will build the last image and then runs
 
 Set Task
 ```shell
-curl -X POST http://localhost:8088/api/task -H "Content-Type: application/json" -d '{"executionTimestamp":1720285291097,"pyload":"VGVzdCBKYXkK", "taskType":"PUB_SUB"}'
+curl -X POST http://localhost:8088/api/task \
+  -H "Content-Type: application/json" \
+  -d '{"taskType":"PUB_SUB","parameter":{"executionTimestamp":"1721672590913"},"pyload":"VGVzdCBKYXkK"}'
 ```
 
 
 Get list of pending tasks
 ```shell
-curl "http://localhost:8088/api/task?offset=100&limit=0"
+curl "http://localhost:8088/api/task"
 ```
 
 ## Clean up

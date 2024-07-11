@@ -63,7 +63,7 @@ services:
       - ts-network
 
   worker-ts:
-    image: ghcr.io/ehsaniara/scheduler:latest
+    image: ghcr.io/ehsaniara/delay-box:latest
     volumes:
       - ./config_multi_worker.yaml:/app/config/config.yaml
     environment:
