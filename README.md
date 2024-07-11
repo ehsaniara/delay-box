@@ -1,14 +1,14 @@
-# Delay Box
+# DelayBox
 
 
 [![Go](https://github.com/ehsaniara/scheduler/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/ehsaniara/scheduler/actions/workflows/go.yml)
 
 
 <p align="center">
-  <img src="docs/scheduler-logo.png" alt="scheduler logo"/>
+  <img src="docs/delay-box-logo.png" alt="scheduler logo"/>
 </p>
 
-Delay Box is a High Throughput Distributed Task Scheduler. It is an advanced system designed to manage and execute a vast number of tasks across a distributed network of servers. 
+**DelayBox** is a High Throughput Distributed Task Scheduler. It is an advanced system designed to manage and execute a vast number of tasks across a distributed network of servers. 
 Built on top of the **Redis** database, it leverages Redis's high-speed in-memory data store for quick access and efficient task management. 
 
 
