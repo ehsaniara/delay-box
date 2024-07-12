@@ -123,7 +123,6 @@ func (s *server) runServer(ctx context.Context) {
 
 type Task struct {
 	TaskUuid  string            `json:"taskUuid"`
-	TaskType  string            `json:"taskType"`
 	Parameter map[string]string `json:"parameter,omitempty"`
 	Pyload    string            `json:"pyload"`
 	Status    string            `json:"status"`
@@ -155,7 +154,6 @@ func (s *server) GetAllTasksHandler(c *gin.Context) {
 	for _, task := range s.scheduler.GetAllTasksPagination(c.Request.Context(), int32(offset), int32(limit)) {
 		tasks = append(tasks, Task{
 			TaskUuid:  task.TaskUuid,
-			TaskType:  task.TaskType.String(),
 			Parameter: s.convertHeaderToParameter(task.Header),
 			Pyload:    base64.StdEncoding.EncodeToString(task.Pyload),
 		})
@@ -176,7 +174,7 @@ func (s *server) SetNewTaskHandler(c *gin.Context) {
 		return
 	}
 
-	err := s.scheduler.Schedule(task.TaskType, task.Pyload, task.Parameter)
+	err := s.scheduler.Schedule(task.Pyload, task.Parameter)
 	if err != nil {
 		fmt.Printf("Error decoding base64 string: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

@@ -26,13 +26,31 @@ Set Task
 ```shell
 curl -X POST http://localhost:8088/task  \
   -H "Content-Type: application/json" -d \
-  '{"taskType":"PUB_SUB","parameter":{"executionTimestamp":"1721672590913"},"pyload":"VGVzdCBKYXkK"}'
+  '{"parameter":{"executionTimestamp":"1721672590913","taskType":"PUB_SUB"},"pyload":"VGVzdCBKYXkK"}'
 ```
 
 to Get list of pending tasks (First 100 tasks)
 ```shell
 curl "http://localhost:8088/task"
 ```
+
+## parameter
+
+| parameter name     | type   | required | description                                                                                                                                                                            |
+|--------------------|--------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| executionTimestamp | string | NO       | With this parameter, the task is expected to be executed at the specified Unix epoch time (in milliseconds). If this parameter is not provided, the task will be executed immediately. |
+| taskType           | string | YES      | [Type of task](#taskType): (ie: PUB_SUB, SHELL_CMD)                                                                                                                                    |
+
+
+
+
+## taskType
+
+| name      | description                                                                                                                                                                                                                                                                                                       |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| PUB_SUB   | This type is the basic schedule task, which you just publish payload in kafka topic `schedulerTopic` and  the payload will be published kafka topic `taskExecutionTopic` when its scheduled to be executed. Note: `schedulerTopic` and `taskExecutionTopic` are already configured in the application config file |
+| SHELL_CMD | In this type, your payload, which is a Linux command, will be executed. Note: If you expect to run any application, it must be pre-installed on the worker machine prior to task execution.                                                                                                                       |
+
 
 
 # General Architecture

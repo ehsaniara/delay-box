@@ -110,7 +110,7 @@ func TestHttpBasedIntegrationTest(t *testing.T) {
 	for i := 0; i < totalTasks; i++ {
 		go func() {
 			defer wg.Done()
-			payload := fmt.Sprintf(`{"taskType":"PUB_SUB","parameter":{"executionTimestamp":"%d"},"pyload":"VGVzdCBKYXkK"}`, executionTimestamp)
+			payload := fmt.Sprintf(`{"parameter":{"executionTimestamp":"%d", "taskType":"PUB_SUB"},"pyload":"VGVzdCBKYXkK"}`, executionTimestamp)
 			url := fmt.Sprintf("http://localhost:%d/task", c.HttpServer.Port)
 
 			// post the task

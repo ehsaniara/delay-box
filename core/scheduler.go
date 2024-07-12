@@ -17,7 +17,7 @@ import (
 
 type Scheduler interface {
 	GetAllTasksPagination(ctx context.Context, offset, limit int32) []*_pb.Task
-	Schedule(taskType, pyload string, header map[string]string) error
+	Schedule(pyload string, header map[string]string) error
 	PublishNewTaskToKafka(task *_pb.Task)
 	Dispatcher(message *sarama.ConsumerMessage)
 	Stop()
@@ -29,7 +29,6 @@ type scheduler struct {
 	producer                     kafka.SyncProducer
 	ctx                          context.Context
 	config                       *config.Config
-	stringToTaskType             StringToTaskTypeFn
 	convertParameterToTaskHeader ConvertParameterToTaskHeaderFn
 }
 
@@ -40,7 +39,6 @@ func NewScheduler(ctx context.Context, storage storage.TaskStorage, producer kaf
 		producer:                     producer,
 		ctx:                          ctx,
 		config:                       config,
-		stringToTaskType:             stringToTaskType,
 		convertParameterToTaskHeader: convertParameterToTaskHeader,
 	}
 
@@ -56,12 +54,7 @@ func (s *scheduler) GetAllTasksPagination(ctx context.Context, offset, limit int
 	return s.storage.GetAllTasksPagination(ctx, offset, limit)
 }
 
-func (s *scheduler) Schedule(taskType, pyload string, header map[string]string) error {
-	tt, err := s.stringToTaskType(taskType)
-	if err != nil {
-		return err
-	}
-
+func (s *scheduler) Schedule(pyload string, header map[string]string) error {
 	byteArray, err := base64.StdEncoding.DecodeString(pyload)
 	if err != nil {
 		fmt.Printf("Error decoding base64 string: %v\n", err)
@@ -77,9 +70,8 @@ func (s *scheduler) Schedule(taskType, pyload string, header map[string]string) 
 	}
 
 	pbTask := &_pb.Task{
-		TaskType: tt,
-		Header:   headerMap,
-		Pyload:   byteArray,
+		Header: headerMap,
+		Pyload: byteArray,
 	}
 
 	// enable to use kafka or direct write to redis
@@ -248,18 +240,6 @@ func (s *scheduler) Stop() {
 	log.Println("⏳  Scheduler Stopping...")
 	close(s.quit)
 	log.Println("👍 Scheduler Stopped.")
-}
-
-// StringToTaskTypeFn use as injection
-type StringToTaskTypeFn func(taskStr string) (_pb.Task_Type, error)
-
-// stringToTaskType converts a taskStr to a Task_Type enum.
-func stringToTaskType(taskTypeStr string) (_pb.Task_Type, error) {
-	// Look up the enum value by name
-	if enumVal, ok := _pb.Task_Type_value[taskTypeStr]; ok {
-		return _pb.Task_Type(enumVal), nil
-	}
-	return _pb.Task_PUB_SUB, fmt.Errorf("invalid enum value: %s", taskTypeStr)
 }
 
 // ConvertParameterToTaskHeaderFn use as injection

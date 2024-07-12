@@ -335,9 +335,9 @@ func TestConvertByteToTasks(t *testing.T) {
 func TestConvertByteToTasks_ValidProtobufMessages(t *testing.T) {
 	executionTime := time.Now().Add(100 * time.Millisecond).UnixMilli() // Schedule 0.1 seconds from now
 	task := _pb.Task{
-		Header:   map[string][]byte{config.ExecutionTimestamp: []byte(strconv.FormatInt(executionTime, 10))},
-		Pyload:   []byte("----- some task ------"), // length should be grater than 32bit
-		TaskType: _pb.Task_PUB_SUB,
+		Header: map[string][]byte{config.ExecutionTimestamp: []byte(strconv.FormatInt(executionTime, 10))},
+		Pyload: []byte("----- some task ------"), // length should be grater than 32bit
+		Status: _pb.Task_PENDING,
 	}
 
 	// Serialize the task into bytes
@@ -362,7 +362,6 @@ func TestConvertByteToTasks_ValidProtobufMessages(t *testing.T) {
 	tasks := ConvertByteToTasks(mockLuaResult)
 
 	for i, actualTask := range tasks {
-		assert.Equal(t, expectedTasks[i].TaskType, actualTask.TaskType)
 		assert.Equal(t, expectedTasks[i].TaskUuid, actualTask.TaskUuid)
 		assert.Equal(t, expectedTasks[i].Header, actualTask.Header)
 	}

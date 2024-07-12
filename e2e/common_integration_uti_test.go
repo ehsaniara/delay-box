@@ -34,7 +34,6 @@ func consumerForTaskExecutionTopic(t *testing.T, ctx context.Context, wg *sync.W
 			err := proto.Unmarshal(message.Value, &task)
 			assert.NoError(t, err)
 
-			assert.Equal(t, expectedTask.TaskType, task.TaskType)
 			assert.Equal(t, expectedTask.TaskUuid, task.TaskUuid)
 
 			log.Printf("TaskExecutionTopic consumerGroup task: %v", task)

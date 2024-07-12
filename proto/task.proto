@@ -6,15 +6,9 @@ package com.github.ehsaniara;
 
 message Task{
   string taskUuid = 1;
-  Type taskType = 2;
-  map<string, bytes> header = 3;
-  bytes pyload = 4;
-  Status status = 5;
-
-  enum Type{
-    PUB_SUB = 0;
-    SHELL_CMD = 1;
-  }
+  map<string, bytes> header = 2;
+  bytes pyload = 3;
+  Status status = 4;
 
   enum Status{
     SCHEDULED = 0;

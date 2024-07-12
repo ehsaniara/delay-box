@@ -264,7 +264,7 @@ func Test_scheduler_Schedule(t *testing.T) {
 
 	header := map[string]string{config.ExecutionTimestamp: fmt.Sprintf("%d", time.Now().Add(time.Second).UnixMilli())}
 	pyloadStr := "VGVzdCBKYXkK"
-	taskType := "PUB_SUB"
+	//taskType := "PUB_SUB"
 
 	newScheduler := &scheduler{
 		quit:     make(chan struct{}),
@@ -272,17 +272,13 @@ func Test_scheduler_Schedule(t *testing.T) {
 		producer: fakeSyncProducer,
 		ctx:      ctx,
 		config:   c,
-		stringToTaskType: func(_taskStr string) (_pb.Task_Type, error) {
-			assert.Equal(t, taskType, _taskStr)
-			return stringToTaskType(_taskStr)
-		},
 		convertParameterToTaskHeader: func(_header map[string]string) map[string][]byte {
 			assert.Equal(t, header, _header)
 			return convertParameterToTaskHeader(_header)
 		},
 	}
 
-	err := newScheduler.Schedule(taskType, pyloadStr, header)
+	err := newScheduler.Schedule(pyloadStr, header)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, fakeSyncProducer.SendMessageCallCount())
 

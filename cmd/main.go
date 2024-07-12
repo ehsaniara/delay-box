@@ -7,6 +7,7 @@ import (
 	"github.com/ehsaniara/scheduler/httpserver"
 	"github.com/ehsaniara/scheduler/kafka"
 	"github.com/ehsaniara/scheduler/storage"
+	"github.com/ehsaniara/scheduler/worker"
 	"log"
 	"os"
 	"os/signal"
@@ -30,14 +31,23 @@ func main() {
 	// starting the scheduler app
 	scheduler := core.NewScheduler(ctx, s, producer, c)
 
-	//start all consumers
-	consumerGroup := kafka.NewConsumerGroup(c)
+	//start all consumers 1
+	consumerGroup1 := kafka.NewConsumerGroup(c)
 	dispatchSchedulerConsumer := kafka.NewConsumer(
 		strings.Split(c.Kafka.SchedulerTopic, `,`),
-		consumerGroup,
+		consumerGroup1,
 		scheduler.Dispatcher,
 	)
 	dispatchSchedulerConsumer.Start(ctx)
+
+	newTaskExecutor := worker.NewTaskExecutor()
+	consumerGroup2 := kafka.NewConsumerGroup(c)
+	dispatchTaskExecutorConsumer := kafka.NewConsumer(
+		strings.Split(c.Kafka.TaskExecutionTopic, `,`),
+		consumerGroup2,
+		newTaskExecutor.ExecuteCommand,
+	)
+	dispatchTaskExecutorConsumer.Start(ctx)
 
 	//start server
 	stopServer := httpserver.NewServer(ctx, nil, scheduler, c)
@@ -62,6 +72,7 @@ func main() {
 	cancel()
 	scheduler.Stop()
 	dispatchSchedulerConsumer.Stop()
+	dispatchTaskExecutorConsumer.Stop()
 	redisClientClose()
 	producerClose()
 	stopServer()
