@@ -18,7 +18,7 @@ ARG TARGETOS
 ARG TARGETARCH
 RUN CGO_ENABLED=0 GIN_MODE=release GOOS="$TARGETOS" GOARCH="$TARGETARCH" go build --ldflags "-w -s" ./cmd/main.go
 
-FROM debian:10 as busybox
+FROM debian:10 AS busybox
 
 # Install busybox
 RUN apt-get update && apt-get install -y busybox --no-install-recommends && \
@@ -31,7 +31,7 @@ FROM gcr.io/distroless/base-debian10
 WORKDIR /app
 
 # Copy the Go application from the builder stage
-COPY --from=builder /app/myapp /app/
+COPY --from=builder /app/main /app/
 
 # Copy busybox from the busybox stage
 COPY --from=busybox /bin/busybox /bin/sh
