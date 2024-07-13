@@ -12,7 +12,7 @@ This project contains the following components:
 
 Make sure to have docker-compose in your machine and then run the docker compose as:
 ```shell
-docker-compose -f docker-multi-worker/docker-compose.yml up -d
+docker-compose up -d
 ```
 
 it will build the last image and then runs

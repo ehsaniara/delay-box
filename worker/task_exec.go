@@ -16,10 +16,32 @@ type TaskExecutor interface {
 }
 
 type taskExecutor struct {
+	shellPath string
 }
 
 func NewTaskExecutor() TaskExecutor {
-	return &taskExecutor{}
+	// List of potential shells
+	shells := []string{"sh", "bash", "zsh"}
+
+	var shellPath string
+	var err error
+
+	// Find the first available shell
+	for _, shell := range shells {
+		shellPath, err = exec.LookPath(shell)
+		if err == nil {
+			break
+		}
+	}
+	if shellPath == "" {
+		log.Fatal("❌  No suitable shell found in PATH.")
+	}
+
+	log.Printf("Using shell: %s\n", shellPath)
+
+	return &taskExecutor{
+		shellPath: shellPath,
+	}
 }
 
 func (t *taskExecutor) ExecuteCommand(message *sarama.ConsumerMessage) {
@@ -34,7 +56,7 @@ func (t *taskExecutor) ExecuteCommand(message *sarama.ConsumerMessage) {
 	}
 
 	if taskType == "SHELL_CMD" {
-		cmd := exec.Command("/bin/sh", "-c", string(message.Value))
+		cmd := exec.Command(t.shellPath, "-c", string(message.Value))
 
 		// Run the command and capture the output
 		output, err := cmd.CombinedOutput()
