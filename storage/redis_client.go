@@ -248,7 +248,7 @@ func ConvertByteToTasks(luaResult interface{}) []*_pb.Task {
 			ts = append(ts, &task)
 		}
 	default:
-		log.Printf("❌  Unexpected type for Lua script result: %T", luaResult)
+		log.Printf("Unexpected type for Lua script result: %T", luaResult)
 	}
 	return ts
 }
