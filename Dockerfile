@@ -33,6 +33,9 @@ FROM gcr.io/distroless/base-debian10
 # Copy bash and all its dependencies from the builder image
 COPY --from=builder /bash-libs/ /
 
+# Set default shell to bash
+SHELL ["/bin/bash", "-c"]
+
 # Set the working directory inside the container
 WORKDIR /app
 
