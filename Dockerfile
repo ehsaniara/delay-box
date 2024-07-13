@@ -1,5 +1,5 @@
 # Use the official Go image to build the application
-FROM golang:1.22.4 AS builder
+FROM golang:1.22.4 AS go_builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -38,7 +38,7 @@ COPY --from=builder /lib64/ld-linux-x86-64.so.2 /lib64/ld-linux-x86-64.so.2
 WORKDIR /app
 
 # Copy the binary from the builder stage
-COPY --from=builder /app/main /app/
+COPY --from=go_builder /app/main /app/
 
 # Expose the port the app runs on
 EXPOSE 8088
