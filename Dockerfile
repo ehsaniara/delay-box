@@ -21,6 +21,17 @@ RUN CGO_ENABLED=0 GIN_MODE=release GOOS="$TARGETOS" GOARCH="$TARGETARCH" go buil
 # Use a minimal base image to run the application
 FROM gcr.io/distroless/base-debian10
 
+# Install necessary packages
+RUN apt-get update && \
+    apt-get install -y \
+        bash \
+        curl \
+        # Add other packages as needed
+    && rm -rf /var/lib/apt/lists/*
+
+# Set default shell to bash
+SHELL ["/bin/bash", "-c"]
+
 # Set the working directory inside the container
 WORKDIR /app
 
