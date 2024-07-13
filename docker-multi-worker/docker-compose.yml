@@ -79,6 +79,17 @@ services:
       - ts-network
     deploy:
       replicas: 3
+    # Install bash and other packages
+    # Use a shell script or inline command to install packages
+    command: >
+      /bin/bash -c "
+      apt-get update && \
+      apt-get install -y bash curl && \
+      rm -rf /var/lib/apt/lists/* && \
+      echo 'Installation complete.' && \
+      echo 'Now running the main command...'
+      "
+
 
   nginx-ts:
     container_name: nginx-ts
