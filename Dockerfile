@@ -1,5 +1,5 @@
 # Use the official Go image to build the application
-FROM golang:1.22.4 AS go_builder
+FROM golang:1.22.4 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -18,29 +18,23 @@ ARG TARGETOS
 ARG TARGETARCH
 RUN CGO_ENABLED=0 GIN_MODE=release GOOS="$TARGETOS" GOARCH="$TARGETARCH" go build --ldflags "-w -s" ./cmd/main.go
 
-FROM debian:10 AS builder
+FROM debian:10 as busybox
 
-# Install bash and find all dependencies
-RUN apt-get update && apt-get install -y bash --no-install-recommends && \
-    mkdir -p /bash-libs && \
-    ldd /bin/bash | tr -s '[:blank:]' '\n' | grep '^/' | xargs -I{} cp --parents {} /bash-libs/ && \
-    cp /bin/bash /bash-libs/ && \
+# Install busybox
+RUN apt-get update && apt-get install -y busybox --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 # Use a minimal base image to run the application
 FROM gcr.io/distroless/base-debian10
 
-# Copy bash and all its dependencies from the builder image
-COPY --from=builder /bash-libs/ /
+# Copy the Go application from the builder stage
+COPY --from=builder /app/myapp /app/
 
-# Set default shell to bash
-SHELL ["/bin/bash", "-c"]
+# Copy busybox from the busybox stage
+COPY --from=busybox /bin/busybox /bin/sh
 
 # Set the working directory inside the container
 WORKDIR /app
-
-# Copy the binary from the builder stage
-COPY --from=go_builder /app/main /app/
 
 # Expose the port the app runs on
 EXPOSE 8088

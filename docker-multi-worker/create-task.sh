@@ -8,6 +8,8 @@ timestamp=$(date +%s000)
 #task will be run in 5 second
 executionTimestamp=$((timestamp + 5000))
 echo "timestamp: $timestamp, executionTimestamp: $executionTimestamp"
+
+# command payload: echo "current: $(date +%s000)"
 payload=$(echo 'echo "current: $(date +%s000)"' |base64)
 
 json_string='{"parameter":{"executionTimestamp":"EXECUTION_TIMESTAMP","taskType":"SHELL_CMD"},"pyload":"PAYLOAD"}'
