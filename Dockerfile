@@ -27,14 +27,14 @@ RUN apt-get update && apt-get install -y busybox --no-install-recommends && \
 # Use a minimal base image to run the application
 FROM gcr.io/distroless/base-debian10
 
+# Set the working directory inside the container
+WORKDIR /app
+
 # Copy the Go application from the builder stage
 COPY --from=builder /app/myapp /app/
 
 # Copy busybox from the busybox stage
 COPY --from=busybox /bin/busybox /bin/sh
-
-# Set the working directory inside the container
-WORKDIR /app
 
 # Expose the port the app runs on
 EXPOSE 8088
