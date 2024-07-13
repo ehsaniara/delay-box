@@ -51,18 +51,6 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GHCR_PAT }}
 
-    - name: Build and push Docker for docker-multi-worker
-      uses: docker/build-push-action@v4
-      with:
-        context: ./docker-multi-worker
-        file: ./docker-multi-worker/Dockerfile
-        platforms: ${{ matrix.platform }}
-        push: true
-        tags: |
-          ghcr.io/${{ github.repository_owner }}/delay-box-docker-multi-worker:latest
-          ghcr.io/${{ github.repository_owner }}/delay-box-docker-multi-worker:${{ github.sha }}
-          ghcr.io/${{ github.repository_owner }}/delay-box-docker-multi-worker:${{ github.ref_name }}
-
     - name: Build and push Docker images
       uses: docker/build-push-action@v4
       with:
@@ -76,3 +64,15 @@ jobs:
 
     - name: Image digest
       run: echo ${{ steps.build-and-push.outputs.digest }}
+
+    - name: Build and push Docker for docker-multi-worker
+      uses: docker/build-push-action@v4
+      with:
+        context: ./docker-multi-worker
+        file: ./docker-multi-worker/Dockerfile
+        platforms: ${{ matrix.platform }}
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/delay-box-docker-multi-worker:latest
+          ghcr.io/${{ github.repository_owner }}/delay-box-docker-multi-worker:${{ github.sha }}
+          ghcr.io/${{ github.repository_owner }}/delay-box-docker-multi-worker:${{ github.ref_name }}
