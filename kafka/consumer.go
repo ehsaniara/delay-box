@@ -19,7 +19,7 @@ func NewConsumerGroup(config *config.Config) interfaces.ConsumerGroup {
 
 	c := sarama.NewConfig()
 	c.Version = version
-	c.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.BalanceStrategyRoundRobin}
+	c.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRoundRobin()}
 	c.Consumer.Offsets.Initial = sarama.OffsetOldest
 
 	brokers := strings.Split(config.Kafka.Brokers, `,`)
@@ -80,6 +80,10 @@ func (c *consumer) Start(ctx context.Context) {
 
 		for {
 			select {
+			case err, ok := <-c.cg.Errors():
+				if ok {
+					log.Printf("Error: %s", err)
+				}
 			case <-c.quit:
 				log.Println("Received stop signal")
 				return

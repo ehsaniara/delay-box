@@ -20,19 +20,17 @@ it will build the last image and then runs
 
 - To access kafka-ui: http://localhost:8080/kafka-ui-ts/
 
-Set Task
+Following task is type of `SHELL_CMD` which mean it will execute at any defined worker nodes on the given timestamp, (Payload is just the OS Date command)
 ```shell
-curl -X POST http://localhost:8088/api/task \
-  -H "Content-Type: application/json" \
-  -d '{"taskType":"PUB_SUB","parameter":{"executionTimestamp":"1721672590913"},"pyload":"VGVzdCBKYXkK"}'
+curl -X POST http://localhost:8088/api/task  \
+  -H "Content-Type: application/json" -d \
+  '{"parameter":{"executionTimestamp":"1720672590913","taskType":"SHELL_CMD"},"pyload":"ZGF0ZQ=="}'
 ```
 
-
-Get list of pending tasks
+To Get list of pending tasks (First 100 tasks)
 ```shell
-curl "http://localhost:8088/api/task"
+curl "http://localhost:8088/task"
 ```
-
 ## Clean up
 
 ```shell

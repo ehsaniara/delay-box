@@ -34,7 +34,7 @@ func (t *taskExecutor) ExecuteCommand(message *sarama.ConsumerMessage) {
 	}
 
 	if taskType == "SHELL_CMD" {
-		cmd := exec.Command("sh", "-c", string(message.Value))
+		cmd := exec.Command("/bin/sh", "-c", string(message.Value))
 
 		// Run the command and capture the output
 		output, err := cmd.CombinedOutput()
