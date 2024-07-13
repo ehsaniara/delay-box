@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/IBM/sarama"
-	"github.com/ehsaniara/scheduler/interfaces/interfacesfakes"
+	"github.com/ehsaniara/delay-box/interfaces/interfacesfakes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"strings"

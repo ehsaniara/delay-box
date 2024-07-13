@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/IBM/sarama"
-	"github.com/ehsaniara/scheduler/interfaces"
+	"github.com/ehsaniara/delay-box/interfaces"
 )
 
 type FakeConsumerGroup struct {

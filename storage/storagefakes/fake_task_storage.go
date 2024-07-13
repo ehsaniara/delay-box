@@ -5,8 +5,8 @@ import (
 	"context"
 	"sync"
 
-	scheduler "github.com/ehsaniara/scheduler/proto"
-	"github.com/ehsaniara/scheduler/storage"
+	scheduler "github.com/ehsaniara/delay-box/proto"
+	"github.com/ehsaniara/delay-box/storage"
 )
 
 type FakeTaskStorage struct {

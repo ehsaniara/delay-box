@@ -3,9 +3,9 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/ehsaniara/scheduler/config"
-	"github.com/ehsaniara/scheduler/interfaces/interfacesfakes"
-	_pb "github.com/ehsaniara/scheduler/proto"
+	"github.com/ehsaniara/delay-box/config"
+	"github.com/ehsaniara/delay-box/interfaces/interfacesfakes"
+	_pb "github.com/ehsaniara/delay-box/proto"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

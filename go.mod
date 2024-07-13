@@ -1,4 +1,4 @@
-module github.com/ehsaniara/scheduler
+module github.com/ehsaniara/delay-box
 
 go 1.22.4
 

@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ehsaniara/scheduler/kafka"
+	"github.com/ehsaniara/delay-box/kafka"
 )
 
 type FakeConsumer struct {

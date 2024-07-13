@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/ehsaniara/scheduler/config"
-	"github.com/ehsaniara/scheduler/core"
-	"github.com/ehsaniara/scheduler/httpserver"
-	"github.com/ehsaniara/scheduler/kafka"
-	"github.com/ehsaniara/scheduler/storage"
-	"github.com/ehsaniara/scheduler/worker"
+	"github.com/ehsaniara/delay-box/config"
+	"github.com/ehsaniara/delay-box/core"
+	"github.com/ehsaniara/delay-box/httpserver"
+	"github.com/ehsaniara/delay-box/kafka"
+	"github.com/ehsaniara/delay-box/storage"
+	"github.com/ehsaniara/delay-box/worker"
 	"log"
 	"os"
 	"os/signal"

@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ehsaniara/scheduler/interfaces"
+	"github.com/ehsaniara/delay-box/interfaces"
 	redis "github.com/redis/go-redis/v9"
 )
 

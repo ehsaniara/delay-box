@@ -5,7 +5,7 @@ package kafka
 
 import (
 	"github.com/IBM/sarama"
-	"github.com/ehsaniara/scheduler/config"
+	"github.com/ehsaniara/delay-box/config"
 	"log"
 	"os"
 	"strings"

@@ -6,9 +6,9 @@ package storage
 import (
 	"context"
 	"fmt"
-	"github.com/ehsaniara/scheduler/config"
-	"github.com/ehsaniara/scheduler/interfaces"
-	_pb "github.com/ehsaniara/scheduler/proto"
+	"github.com/ehsaniara/delay-box/config"
+	"github.com/ehsaniara/delay-box/interfaces"
+	_pb "github.com/ehsaniara/delay-box/proto"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/proto"

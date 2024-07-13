@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/IBM/sarama"
-	"github.com/ehsaniara/scheduler/kafka"
+	"github.com/ehsaniara/delay-box/kafka"
 )
 
 type FakeSyncProducer struct {
