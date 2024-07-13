@@ -35,6 +35,7 @@ COPY --from=builder /app/main /app/
 
 # Copy busybox from the busybox stage
 COPY --from=busybox /bin/busybox /bin/sh
+COPY --from=busybox /bin/busybox /bin/date
 
 # Expose the port the app runs on
 EXPOSE 8088

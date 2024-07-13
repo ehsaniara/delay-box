@@ -1,7 +1,8 @@
 # DelayBox
 
 
-[![Go](https://github.com/ehsaniara/scheduler/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/ehsaniara/scheduler/actions/workflows/go.yml)
+[![Go](https://github.com/ehsaniara/delay-box/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/ehsaniara/delay-box/actions/workflows/go.yml)
+
 
 
 <p align="center">
