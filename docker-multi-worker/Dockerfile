@@ -2,12 +2,14 @@ FROM ghcr.io/ehsaniara/delay-box:latest AS builder
 # Install curl
 FROM debian:10 AS curl-installer
 
-RUN apt-get update && apt-get install -y curl --no-install-recommends && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y busybox curl --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 # Create the final image for amd64 architecture
 FROM scratch AS amd64
 WORKDIR /app
 COPY --from=builder /app/main /app/
+COPY --from=curl-installer /bin/busybox /bin/sh
+COPY --from=curl-installer /bin/busybox /bin/date
 COPY --from=curl-installer /usr/bin/curl /usr/bin/curl
 COPY --from=curl-installer /lib/x86_64-linux-gnu /lib/
 COPY --from=curl-installer /usr/lib/x86_64-linux-gnu /usr/lib/
@@ -25,6 +27,8 @@ CMD ["/app/main"]
 FROM scratch AS arm64
 WORKDIR /app
 COPY --from=builder /app/main /app/
+COPY --from=curl-installer /bin/busybox /bin/sh
+COPY --from=curl-installer /bin/busybox /bin/date
 COPY --from=curl-installer /usr/bin/curl /usr/bin/curl
 COPY --from=curl-installer /lib/aarch64-linux-gnu /lib/
 COPY --from=curl-installer /usr/lib/aarch64-linux-gnu /usr/lib/
