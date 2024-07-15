@@ -28,7 +28,7 @@ This scheduler ensures optimal performance and reliability by utilizing protobuf
 
 # Examples
 
-You can try the docker compose example with 3 worker nodes example [here]([docker-multi-worker](docker-multi-worker)) 
+You can try the docker compose example with 3 worker nodes example [here](./docker-multi-worker) 
 
 Following task is type of `SHELL_CMD` which mean it will execute at any defined worker nodes on the given timestamp, (Payload is just the OS Date command)
 ```shell
