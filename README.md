@@ -27,8 +27,26 @@ This scheduler ensures optimal performance and reliability by utilizing protobuf
 
 
 # Examples
+## Docker Compose
+
+after cloning the project 
+```shell
+cd docker-multi-worker
+docker-compose -f docker-compose.yml up -d
+```
+Wait until all worker nodes are up and running (you'll see in their console: "🚀 scheduler is ready!"). Then run the following command to create 1000 tasks which designed to execute in 10 second. (tasks just simply print the date in the worker nodes console)
+
+**Note:** your terminal console will only print  `{"message":"task created"}` 1000 times, but the worker consoles shows the date. (in this example its docker logs)
+
+```shell
+sh ./create-task.sh
+```
+
 
 You can try the docker compose example with 3 worker nodes example [here](./docker-multi-worker) 
+
+
+## Local Example
 
 Following task is type of `SHELL_CMD` which mean it will execute at any defined worker nodes on the given timestamp, (Payload is just the OS Date command)
 ```shell

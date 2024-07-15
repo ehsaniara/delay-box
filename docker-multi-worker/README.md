@@ -42,3 +42,7 @@ To stop and remove the containers, volumes, and networks created by Docker Compo
 ```shell
 docker-compose -f docker-multi-worker/docker-compose.yml down -v
 ```
+
+## Supported Architectures
+* linux/amd64
+* linux/arm64
