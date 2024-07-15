@@ -50,6 +50,22 @@ services:
     networks:
       - ts-network
 
+  kafka-create-topic:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      kafka-ts:
+        condition: service_healthy
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-ts:2181
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+    networks:
+      - ts-network
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+      - ./create_kafka_topic.sh:/usr/bin/create_kafka_topic.sh
+    entrypoint: ["/bin/sh", "-c", "/usr/bin/create_kafka_topic.sh"]
+
   redis-ts:
     image: 'redis:latest'
     container_name: redis-ts
@@ -97,3 +113,6 @@ services:
 networks:
   ts-network:
     driver: bridge
+
+volumes:
+  kafka-data:

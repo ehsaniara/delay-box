@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # number of tasks
-max=100
+max=1000
 
 timestamp=$(date +%s000)
 
