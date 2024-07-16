@@ -9,17 +9,21 @@ import (
 	"github.com/ehsaniara/delay-box/kafka"
 	_pb "github.com/ehsaniara/delay-box/proto"
 	"github.com/ehsaniara/delay-box/storage"
+	"github.com/redis/go-redis/v9"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
 
+//counterfeiter:generate . Scheduler
 type Scheduler interface {
+	SetUpSubscriber(ctx context.Context)
 	GetAllTasksPagination(ctx context.Context, offset, limit int32) []*_pb.Task
 	Schedule(pyload string, header map[string]string) error
-	PublishNewTaskToKafka(task *_pb.Task)
-	Dispatcher(message *sarama.ConsumerMessage)
+	Subscribe(ctx context.Context)
 	Stop()
 }
 
@@ -30,9 +34,14 @@ type scheduler struct {
 	ctx                          context.Context
 	config                       *config.Config
 	convertParameterToTaskHeader ConvertParameterToTaskHeaderFn
+	pubSub                       *redis.PubSub
+	dispatchSchedulerConsumer    kafka.Consumer
 }
 
 func NewScheduler(ctx context.Context, storage storage.TaskStorage, producer kafka.SyncProducer, config *config.Config) Scheduler {
+
+	log.Printf("✔️ Scheduler is waiting to start..")
+
 	s := &scheduler{
 		quit:                         make(chan struct{}),
 		storage:                      storage,
@@ -42,11 +51,26 @@ func NewScheduler(ctx context.Context, storage storage.TaskStorage, producer kaf
 		convertParameterToTaskHeader: convertParameterToTaskHeader,
 	}
 
-	log.Printf("✔️ Scheduler is waiting to start..")
 	s.Serve(ctx)
-	log.Printf("✔️ Scheduler is started.")
 
 	return s
+}
+
+func (s *scheduler) SetUpSubscriber(ctx context.Context) {
+	//start all consumers 1
+	if s.config.Kafka.Enabled {
+		consumerGroup1 := kafka.NewConsumerGroup(s.config)
+		dispatchSchedulerConsumer := kafka.NewConsumer(
+			strings.Split(s.config.Kafka.SchedulerTopic, `,`),
+			consumerGroup1,
+			s.KafkaDispatcher,
+		)
+		dispatchSchedulerConsumer.Start(ctx)
+		s.dispatchSchedulerConsumer = dispatchSchedulerConsumer
+	} else {
+		go s.Subscribe(ctx)
+	}
+	log.Printf("✔️ Scheduler is started.")
 }
 
 // GetAllTasksPagination gat all tasks using ListOfAllTaskScript
@@ -77,18 +101,29 @@ func (s *scheduler) Schedule(pyload string, header map[string]string) error {
 	// enable to use kafka or direct write to redis
 	// recommended to enable kafka in high write traffic
 	if s.config.Kafka.Enabled {
-		s.PublishNewTaskToKafka(pbTask)
+		return s.PublishNewTaskToKafka(pbTask)
 	} else {
-		// not implemented
+		return s.PublishNewTaskToRedis(pbTask)
+	}
+}
+
+// PublishNewTaskToRedis to publish a task into Redis SchedulerChanel
+func (s *scheduler) PublishNewTaskToRedis(task *_pb.Task) error {
+	marshal, err := proto.Marshal(task)
+	if err != nil {
+		return err
 	}
 
+	publish := s.storage.Publish(s.ctx, s.config.Storage.SchedulerChanel, marshal)
+	if err = publish.Err(); err != nil {
+		return err
+	}
 	return nil
 }
 
 // PublishNewTaskToKafka tp publish new task into SchedulerTopic topic so later on it will be stored in redis.
-func (s *scheduler) PublishNewTaskToKafka(task *_pb.Task) {
-	log.Print("--------- publish new task ----------")
-
+// We need this to have no slowness in receiving tasks and make it resilient using Kafka
+func (s *scheduler) PublishNewTaskToKafka(task *_pb.Task) error {
 	headers := make([]sarama.RecordHeader, 0)
 	for k, v := range task.Header {
 		headers = append(headers, sarama.RecordHeader{
@@ -105,12 +140,13 @@ func (s *scheduler) PublishNewTaskToKafka(task *_pb.Task) {
 
 	_, _, err := s.producer.SendMessage(message)
 	if err != nil {
-		log.Panicf("❌  Producer err: %v", err)
-		return
+		return err
 	}
+	return nil
 }
 
-func (s *scheduler) Dispatcher(message *sarama.ConsumerMessage) {
+// KafkaDispatcher On system convenience it Tasks are consumed from Kafka topic and stored in Redis.
+func (s *scheduler) KafkaDispatcher(message *sarama.ConsumerMessage) {
 	log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s\n", string(message.Value), message.Timestamp, message.Topic)
 
 	if message.Headers == nil {
@@ -165,6 +201,44 @@ func getExecutionTimestamp(message *sarama.ConsumerMessage) int64 {
 	return 0
 }
 
+func (s *scheduler) Subscribe(ctx context.Context) {
+	pubsub := s.storage.Subscribe(ctx, s.config.Storage.SchedulerChanel)
+
+	// Wait for confirmation that subscription is created
+
+	if _, err := pubsub.Receive(ctx); err != nil {
+		fmt.Println("❌  Receive")
+		return
+	}
+
+	s.pubSub = pubsub
+	ch := pubsub.ChannelWithSubscriptions()
+
+	for {
+		select {
+		case msgInterface := <-ch:
+			switch msg := msgInterface.(type) {
+			case *redis.Message:
+				var task _pb.Task
+				// Convert item to []byte
+				if err := proto.Unmarshal([]byte(msg.Payload), &task); err != nil {
+					fmt.Printf("❌  Failed to unmarshal protobuf: %v\n", err)
+					continue
+				}
+				s.storage.SetNewTask(ctx, &task)
+			case *redis.Subscription:
+				fmt.Printf("Subscription: kind=%s, channel=%s, count=%d\n", msg.Kind, msg.Channel, msg.Count)
+			default:
+				fmt.Println("Unknown message type")
+			}
+
+		case <-s.quit:
+			log.Println("👍 Subscribe stopped by signal.")
+			return
+		}
+	}
+}
+
 func (s *scheduler) Serve(ctx context.Context) {
 	var once sync.Once
 	var wg sync.WaitGroup
@@ -197,11 +271,15 @@ func (s *scheduler) executeDueTasks(dueTasks []*_pb.Task) {
 		return
 	}
 	for _, task := range dueTasks {
-		go s.processTask(task)
+		if s.config.Kafka.Enabled {
+			go s.processTaskWithKafka(task)
+		} else {
+			go s.processTaskWithRedis(task)
+		}
 	}
 }
 
-func (s *scheduler) processTask(task *_pb.Task) {
+func (s *scheduler) processTaskWithKafka(task *_pb.Task) {
 	for k, bytes := range task.Header {
 		if k == config.ExecutionTimestamp {
 			str := string(bytes)
@@ -211,34 +289,51 @@ func (s *scheduler) processTask(task *_pb.Task) {
 		}
 	}
 
-	task.Status = _pb.Task_PROCESSING
-	headers := make([]sarama.RecordHeader, 0)
-	for k, v := range task.Header {
-		headers = append(headers, sarama.RecordHeader{
-			Key:   []byte(k),
-			Value: v,
-		})
+	marshal, err := proto.Marshal(task)
+	if err != nil {
+		fmt.Println("❌  Error: marshal", err)
+		return
 	}
 
 	message := &sarama.ProducerMessage{
-		Topic:   s.config.Kafka.TaskExecutionTopic,
-		Value:   sarama.ByteEncoder(task.Pyload),
-		Headers: headers,
+		Topic: s.config.Kafka.TaskExecutionTopic,
+		Value: sarama.ByteEncoder(marshal),
 	}
 
 	partition, offset, err := s.producer.SendMessage(message)
 	if err != nil {
 		// be added in DLQ
-		task.Status = _pb.Task_FAILED
 		log.Panicf("❌  Producer err: %v", err)
 		return
 	}
 	log.Printf("p:%d o:%d", partition, offset)
 }
 
+func (s *scheduler) processTaskWithRedis(task *_pb.Task) {
+	marshal, err := proto.Marshal(task)
+	if err != nil {
+		log.Panicf("❌  Publish Marshal err: %v", err)
+	}
+
+	publish := s.storage.Publish(s.ctx, s.config.Storage.TaskExecutionChanel, marshal)
+
+	if err = publish.Err(); err != nil {
+		log.Panicf("❌  Publish err: %v", err)
+	}
+}
+
 func (s *scheduler) Stop() {
 	log.Println("⏳  Scheduler Stopping...")
 	close(s.quit)
+
+	if s.config.Kafka.Enabled {
+		s.dispatchSchedulerConsumer.Stop()
+	} else {
+
+		if err := s.pubSub.Close(); err != nil {
+			log.Printf("❌  pubsub err: %v", err)
+		}
+	}
 	log.Println("👍 Scheduler Stopped.")
 }
 

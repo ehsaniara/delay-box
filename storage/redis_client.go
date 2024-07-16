@@ -36,7 +36,7 @@ func NewRedisClient(ctx context.Context, config *config.Config) (TaskStorage, fu
 	client.SetUp(ctx, config.Storage.RedisHost, config.Storage.RedisPass, config.Storage.RedisDb)
 
 	return client, func() {
-		log.Printf("⏳ Redis connection pool Closing...\n")
+		log.Printf("⏳  Redis connection pool Closing...\n")
 		err := client.rdb.Close()
 		if err != nil {
 			log.Printf("Error Close taskRedisClient:%v \n", err)
@@ -52,13 +52,21 @@ type taskRedisClient struct {
 	convertByteToTasks ConvertByteToTasksFn
 }
 
+func (c *taskRedisClient) Publish(ctx context.Context, channel string, message interface{}) *redis.IntCmd {
+	return c.rdb.Publish(ctx, channel, message)
+}
+
+func (c *taskRedisClient) Subscribe(ctx context.Context, channels ...string) *redis.PubSub {
+	return c.rdb.Subscribe(ctx, channels...)
+}
+
 func (c *taskRedisClient) SetUp(ctx context.Context, redisHost, redisPass string, database int) {
 
 	if len(redisHost) == 0 {
 		log.Fatal("redisHost is missing")
 	}
 
-	log.Printf("⏳ Redis Setting up... \n")
+	log.Printf("⏳  Redis Setting up... \n")
 	c.rdb = redis.NewClient(&redis.Options{
 		Addr:     redisHost,
 		Password: redisPass, // secret
@@ -81,6 +89,8 @@ type TaskStorage interface {
 	GetAllTasks(ctx context.Context) []*_pb.Task
 	CountAllWaitingTasks(ctx context.Context) (int64, error)
 	GetAllTasksPagination(ctx context.Context, offset, limit int32) []*_pb.Task
+	Publish(ctx context.Context, channel string, message interface{}) *redis.IntCmd
+	Subscribe(ctx context.Context, channels ...string) *redis.PubSub
 }
 
 func (c *taskRedisClient) SetNewTask(ctx context.Context, task *_pb.Task) {

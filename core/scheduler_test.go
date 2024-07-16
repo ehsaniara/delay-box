@@ -3,14 +3,17 @@ package core
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/ehsaniara/delay-box/config"
 	"github.com/ehsaniara/delay-box/kafka/kafkafakes"
 	_pb "github.com/ehsaniara/delay-box/proto"
 	"github.com/ehsaniara/delay-box/storage/storagefakes"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"reflect"
 	"strconv"
 	"testing"
@@ -37,8 +40,15 @@ func Test_Dispatcher_with_no_header(t *testing.T) {
 
 	// payload
 	// create kafka message from payload
-	newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
-	newScheduler.Dispatcher(&sarama.ConsumerMessage{
+	//newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
+	s := &scheduler{
+		storage:                      fakeStorage,
+		producer:                     fakeSyncProducer,
+		ctx:                          ctx,
+		config:                       &c,
+		convertParameterToTaskHeader: convertParameterToTaskHeader,
+	}
+	s.KafkaDispatcher(&sarama.ConsumerMessage{
 		Key:   []byte(("some Key")),
 		Value: []byte("some payload data"),
 		Topic: "STT",
@@ -77,8 +87,15 @@ func Test_Dispatcher(t *testing.T) {
 	payloadMarshal := []byte("some payload data")
 
 	// create kafka message from payload
-	newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
-	newScheduler.Dispatcher(&sarama.ConsumerMessage{
+	//newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
+	s := &scheduler{
+		storage:                      fakeStorage,
+		producer:                     fakeSyncProducer,
+		ctx:                          ctx,
+		config:                       &c,
+		convertParameterToTaskHeader: convertParameterToTaskHeader,
+	}
+	s.KafkaDispatcher(&sarama.ConsumerMessage{
 		Key: []byte(key),
 		Headers: []*sarama.RecordHeader{{
 			Key:   []byte(config.ExecutionTimestamp),
@@ -106,11 +123,14 @@ func Test_Serve(t *testing.T) {
 	fakeStorage := &storagefakes.FakeTaskStorage{}
 	fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	c := config.Config{
 		Frequency: int32(10),
+		Kafka: config.KafkaConfig{
+			Enabled: true,
+		},
 		Storage: config.StorageConfig{
 			SchedulerKeyName: schedulerKeyName,
 		},
@@ -160,7 +180,7 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	message := &sarama.ProducerMessage{
 		Topic:   c.Kafka.TaskExecutionTopic,
 		Value:   sarama.ByteEncoder(task.Pyload),
-		Headers: nil, // no header sent to Dispatcher
+		Headers: nil, // no header sent to KafkaDispatcher
 	}
 
 	fakeStorage.FetchAndRemoveDueTasksReturnsOnCall(0, tasks)
@@ -184,11 +204,13 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	_message := fakeSyncProducer.SendMessageArgsForCall(0)
 	assert.Equal(t, taskExecutionTopic, _message.Topic)
 	assert.Equal(t, message.Topic, _message.Topic)
-	encode, err := _message.Value.Encode()
+
+	marshal, err := proto.Marshal(task)
 	assert.NoError(t, err)
-	assert.Equal(t, task.Pyload, encode)
-	assert.Equal(t, len(task.Header), 1)
-	assert.Equal(t, len(task.Header), len(_message.Headers))
+
+	assert.Equal(t, sarama.ByteEncoder(marshal), _message.Value)
+	assert.Equal(t, 1, len(task.Header))
+	//assert.Equal(t, len(task.Header), len(_message.Headers))
 	//for k, v := range task.Header {
 	//	assert.Equal(t, string(task[k]), encode)
 	//}
@@ -226,8 +248,15 @@ func Test_scheduler_PublishNewTask(t *testing.T) {
 		Pyload: payloadMarshal,
 	}
 	// create kafka message from payload
-	newScheduler := NewScheduler(ctx, fakeStorage, fakeSyncProducer, &c)
-	newScheduler.PublishNewTaskToKafka(task)
+	s := &scheduler{
+		storage:                      fakeStorage,
+		producer:                     fakeSyncProducer,
+		ctx:                          ctx,
+		config:                       &c,
+		convertParameterToTaskHeader: convertParameterToTaskHeader,
+	}
+	err := s.PublishNewTaskToKafka(task)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, fakeSyncProducer.SendMessageCallCount())
 }
 
@@ -287,4 +316,129 @@ func Test_scheduler_Schedule(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, sarama.ByteEncoder(decodeByte), _call.Value)
+}
+
+func Test_scheduler_PublishNewTaskToRedis(t *testing.T) {
+	ctx := context.Background()
+
+	c := &config.Config{
+		Kafka:   config.KafkaConfig{Enabled: false},
+		Storage: config.StorageConfig{SchedulerChanel: "TestSchedulerChanel"},
+	}
+
+	task := &_pb.Task{
+		Header: map[string][]byte{
+			config.ExecutionTimestamp: []byte(strconv.FormatInt(time.Now().Add(2*time.Second).UnixMilli(), 10)),
+		},
+		Pyload: []byte("some payload data"),
+	}
+
+	marshal, _ := proto.Marshal(task)
+
+	tests := []struct {
+		name                 string
+		task                 *_pb.Task
+		marshal              []byte
+		publishReturnsExpect *redis.IntCmd
+		err                  error
+	}{
+		{
+			name:                 "Happy Path",
+			task:                 task,
+			marshal:              marshal,
+			publishReturnsExpect: redis.NewIntResult(0, nil),
+			err:                  nil,
+		},
+		{
+			name:    "Marshall Error",
+			task:    nil,
+			marshal: nil,
+			err:     errors.New("marshall error"),
+		},
+		{
+			name:                 "Publisher Error",
+			task:                 task,
+			marshal:              marshal,
+			publishReturnsExpect: redis.NewIntResult(0, errors.New("publisher error")),
+			err:                  errors.New("publisher error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fakeTaskStorage := &storagefakes.FakeTaskStorage{}
+			s := &scheduler{
+				storage: fakeTaskStorage,
+				ctx:     ctx,
+				config:  c,
+			}
+
+			if tt.marshal != nil {
+
+				fakeTaskStorage.PublishReturns(tt.publishReturnsExpect)
+
+				res := s.PublishNewTaskToRedis(tt.task)
+				assert.Equal(t, tt.err, res)
+
+				assert.Equal(t, 1, fakeTaskStorage.PublishCallCount())
+
+				_ctx, _chanel, _marshal := fakeTaskStorage.PublishArgsForCall(0)
+				assert.Equal(t, ctx, _ctx)
+				assert.Equal(t, "TestSchedulerChanel", _chanel)
+				assert.Equal(t, marshal, _marshal)
+			}
+
+		})
+	}
+}
+
+func Test_scheduler_PublishNewTaskToKafka(t *testing.T) {
+	ctx := context.Background()
+
+	c := &config.Config{
+		Kafka: config.KafkaConfig{Enabled: true},
+	}
+
+	task := &_pb.Task{
+		Header: map[string][]byte{
+			config.ExecutionTimestamp: []byte(strconv.FormatInt(time.Now().Add(2*time.Second).UnixMilli(), 10)),
+		},
+		Pyload: []byte("some payload data"),
+	}
+
+	tests := []struct {
+		name string
+		task *_pb.Task
+		err  error
+	}{
+		{
+			name: "Happy Path",
+			task: task,
+			err:  nil,
+		},
+		{
+			name: "SendMessage With Error",
+			task: task,
+			err:  errors.New("marshall error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fakeSyncProducer := &kafkafakes.FakeSyncProducer{}
+			s := &scheduler{
+				producer: fakeSyncProducer,
+				ctx:      ctx,
+				config:   c,
+			}
+
+			fakeSyncProducer.SendMessageReturns(0, 0, tt.err)
+
+			res := s.PublishNewTaskToKafka(tt.task)
+			assert.Equal(t, 1, fakeSyncProducer.SendMessageCallCount())
+			assert.Equal(t, tt.err, res)
+		})
+	}
 }

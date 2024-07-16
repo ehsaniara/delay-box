@@ -20,6 +20,8 @@ type RedisDBClient interface {
 	Ping(ctx context.Context) *redis.StatusCmd
 	Options() *redis.Options
 	Close() error
+	Publish(ctx context.Context, channel string, message interface{}) *redis.IntCmd
+	Subscribe(ctx context.Context, channels ...string) *redis.PubSub
 }
 
 //counterfeiter:generate . ConsumerGroup

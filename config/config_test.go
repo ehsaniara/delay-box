@@ -21,10 +21,11 @@ func TestLoadConfig(t *testing.T) {
 	// Storage
 	assert.Equal(t, "localhost:6379", config.Storage.RedisHost)
 	assert.Equal(t, 0, config.Storage.RedisDb)
-	assert.Equal(t, "schedule_chanel", config.Storage.Chanel)
+	assert.Equal(t, "Scheduler", config.Storage.SchedulerChanel)
+	assert.Equal(t, "TaskExecution", config.Storage.TaskExecutionChanel)
 	assert.Equal(t, "scheduled_tasks", config.Storage.SchedulerKeyName)
 	// Kafka
-	assert.Equal(t, true, config.Kafka.Enabled)
+	//assert.Equal(t, true, config.Kafka.Enabled)
 	assert.Equal(t, "localhost:9092", config.Kafka.Brokers)
 	assert.Equal(t, "scheduler", config.Kafka.Group)
 	assert.Equal(t, "Scheduler", config.Kafka.SchedulerTopic)

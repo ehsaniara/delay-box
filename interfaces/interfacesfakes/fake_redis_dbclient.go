@@ -55,6 +55,31 @@ type FakeRedisDBClient struct {
 	pingReturnsOnCall map[int]struct {
 		result1 *redis.StatusCmd
 	}
+	PublishStub        func(context.Context, string, interface{}) *redis.IntCmd
+	publishMutex       sync.RWMutex
+	publishArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 interface{}
+	}
+	publishReturns struct {
+		result1 *redis.IntCmd
+	}
+	publishReturnsOnCall map[int]struct {
+		result1 *redis.IntCmd
+	}
+	SubscribeStub        func(context.Context, ...string) *redis.PubSub
+	subscribeMutex       sync.RWMutex
+	subscribeArgsForCall []struct {
+		arg1 context.Context
+		arg2 []string
+	}
+	subscribeReturns struct {
+		result1 *redis.PubSub
+	}
+	subscribeReturnsOnCall map[int]struct {
+		result1 *redis.PubSub
+	}
 	ZAddStub        func(context.Context, string, ...redis.Z) *redis.IntCmd
 	zAddMutex       sync.RWMutex
 	zAddArgsForCall []struct {
@@ -320,6 +345,131 @@ func (fake *FakeRedisDBClient) PingReturnsOnCall(i int, result1 *redis.StatusCmd
 	}{result1}
 }
 
+func (fake *FakeRedisDBClient) Publish(arg1 context.Context, arg2 string, arg3 interface{}) *redis.IntCmd {
+	fake.publishMutex.Lock()
+	ret, specificReturn := fake.publishReturnsOnCall[len(fake.publishArgsForCall)]
+	fake.publishArgsForCall = append(fake.publishArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 interface{}
+	}{arg1, arg2, arg3})
+	stub := fake.PublishStub
+	fakeReturns := fake.publishReturns
+	fake.recordInvocation("Publish", []interface{}{arg1, arg2, arg3})
+	fake.publishMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeRedisDBClient) PublishCallCount() int {
+	fake.publishMutex.RLock()
+	defer fake.publishMutex.RUnlock()
+	return len(fake.publishArgsForCall)
+}
+
+func (fake *FakeRedisDBClient) PublishCalls(stub func(context.Context, string, interface{}) *redis.IntCmd) {
+	fake.publishMutex.Lock()
+	defer fake.publishMutex.Unlock()
+	fake.PublishStub = stub
+}
+
+func (fake *FakeRedisDBClient) PublishArgsForCall(i int) (context.Context, string, interface{}) {
+	fake.publishMutex.RLock()
+	defer fake.publishMutex.RUnlock()
+	argsForCall := fake.publishArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeRedisDBClient) PublishReturns(result1 *redis.IntCmd) {
+	fake.publishMutex.Lock()
+	defer fake.publishMutex.Unlock()
+	fake.PublishStub = nil
+	fake.publishReturns = struct {
+		result1 *redis.IntCmd
+	}{result1}
+}
+
+func (fake *FakeRedisDBClient) PublishReturnsOnCall(i int, result1 *redis.IntCmd) {
+	fake.publishMutex.Lock()
+	defer fake.publishMutex.Unlock()
+	fake.PublishStub = nil
+	if fake.publishReturnsOnCall == nil {
+		fake.publishReturnsOnCall = make(map[int]struct {
+			result1 *redis.IntCmd
+		})
+	}
+	fake.publishReturnsOnCall[i] = struct {
+		result1 *redis.IntCmd
+	}{result1}
+}
+
+func (fake *FakeRedisDBClient) Subscribe(arg1 context.Context, arg2 ...string) *redis.PubSub {
+	fake.subscribeMutex.Lock()
+	ret, specificReturn := fake.subscribeReturnsOnCall[len(fake.subscribeArgsForCall)]
+	fake.subscribeArgsForCall = append(fake.subscribeArgsForCall, struct {
+		arg1 context.Context
+		arg2 []string
+	}{arg1, arg2})
+	stub := fake.SubscribeStub
+	fakeReturns := fake.subscribeReturns
+	fake.recordInvocation("Subscribe", []interface{}{arg1, arg2})
+	fake.subscribeMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2...)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeRedisDBClient) SubscribeCallCount() int {
+	fake.subscribeMutex.RLock()
+	defer fake.subscribeMutex.RUnlock()
+	return len(fake.subscribeArgsForCall)
+}
+
+func (fake *FakeRedisDBClient) SubscribeCalls(stub func(context.Context, ...string) *redis.PubSub) {
+	fake.subscribeMutex.Lock()
+	defer fake.subscribeMutex.Unlock()
+	fake.SubscribeStub = stub
+}
+
+func (fake *FakeRedisDBClient) SubscribeArgsForCall(i int) (context.Context, []string) {
+	fake.subscribeMutex.RLock()
+	defer fake.subscribeMutex.RUnlock()
+	argsForCall := fake.subscribeArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeRedisDBClient) SubscribeReturns(result1 *redis.PubSub) {
+	fake.subscribeMutex.Lock()
+	defer fake.subscribeMutex.Unlock()
+	fake.SubscribeStub = nil
+	fake.subscribeReturns = struct {
+		result1 *redis.PubSub
+	}{result1}
+}
+
+func (fake *FakeRedisDBClient) SubscribeReturnsOnCall(i int, result1 *redis.PubSub) {
+	fake.subscribeMutex.Lock()
+	defer fake.subscribeMutex.Unlock()
+	fake.SubscribeStub = nil
+	if fake.subscribeReturnsOnCall == nil {
+		fake.subscribeReturnsOnCall = make(map[int]struct {
+			result1 *redis.PubSub
+		})
+	}
+	fake.subscribeReturnsOnCall[i] = struct {
+		result1 *redis.PubSub
+	}{result1}
+}
+
 func (fake *FakeRedisDBClient) ZAdd(arg1 context.Context, arg2 string, arg3 ...redis.Z) *redis.IntCmd {
 	fake.zAddMutex.Lock()
 	ret, specificReturn := fake.zAddReturnsOnCall[len(fake.zAddArgsForCall)]
@@ -456,6 +606,10 @@ func (fake *FakeRedisDBClient) Invocations() map[string][][]interface{} {
 	defer fake.optionsMutex.RUnlock()
 	fake.pingMutex.RLock()
 	defer fake.pingMutex.RUnlock()
+	fake.publishMutex.RLock()
+	defer fake.publishMutex.RUnlock()
+	fake.subscribeMutex.RLock()
+	defer fake.subscribeMutex.RUnlock()
 	fake.zAddMutex.RLock()
 	defer fake.zAddMutex.RUnlock()
 	fake.zCardMutex.RLock()

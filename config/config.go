@@ -24,11 +24,12 @@ type HttpServerConfig struct {
 }
 
 type StorageConfig struct {
-	RedisPass        string
-	RedisHost        string
-	RedisDb          int
-	Chanel           string
-	SchedulerKeyName string
+	RedisPass           string
+	RedisHost           string
+	RedisDb             int
+	SchedulerChanel     string
+	TaskExecutionChanel string
+	SchedulerKeyName    string
 }
 
 type KafkaConfig struct {
@@ -66,7 +67,8 @@ func Print(config *Config) {
 	}
 	log.Printf("redisPass: %s\n", p)
 	log.Printf("redisDb: %d\n", config.Storage.RedisDb)
-	log.Printf("chanel: %s\n", config.Storage.Chanel)
+	log.Printf("schedulerChanel: %s\n", config.Storage.SchedulerChanel)
+	log.Printf("taskExecutionChanel: %s\n", config.Storage.TaskExecutionChanel)
 	log.Printf("schedulerKeyName: %s\n", config.Storage.SchedulerKeyName)
 
 	log.Printf("kafka enabled: %v\n", config.Kafka.Enabled)

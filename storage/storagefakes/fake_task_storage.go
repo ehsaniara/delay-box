@@ -7,6 +7,7 @@ import (
 
 	scheduler "github.com/ehsaniara/delay-box/proto"
 	"github.com/ehsaniara/delay-box/storage"
+	redis "github.com/redis/go-redis/v9"
 )
 
 type FakeTaskStorage struct {
@@ -58,11 +59,36 @@ type FakeTaskStorage struct {
 	getAllTasksPaginationReturnsOnCall map[int]struct {
 		result1 []*scheduler.Task
 	}
+	PublishStub        func(context.Context, string, interface{}) *redis.IntCmd
+	publishMutex       sync.RWMutex
+	publishArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 interface{}
+	}
+	publishReturns struct {
+		result1 *redis.IntCmd
+	}
+	publishReturnsOnCall map[int]struct {
+		result1 *redis.IntCmd
+	}
 	SetNewTaskStub        func(context.Context, *scheduler.Task)
 	setNewTaskMutex       sync.RWMutex
 	setNewTaskArgsForCall []struct {
 		arg1 context.Context
 		arg2 *scheduler.Task
+	}
+	SubscribeStub        func(context.Context, ...string) *redis.PubSub
+	subscribeMutex       sync.RWMutex
+	subscribeArgsForCall []struct {
+		arg1 context.Context
+		arg2 []string
+	}
+	subscribeReturns struct {
+		result1 *redis.PubSub
+	}
+	subscribeReturnsOnCall map[int]struct {
+		result1 *redis.PubSub
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -317,6 +343,69 @@ func (fake *FakeTaskStorage) GetAllTasksPaginationReturnsOnCall(i int, result1 [
 	}{result1}
 }
 
+func (fake *FakeTaskStorage) Publish(arg1 context.Context, arg2 string, arg3 interface{}) *redis.IntCmd {
+	fake.publishMutex.Lock()
+	ret, specificReturn := fake.publishReturnsOnCall[len(fake.publishArgsForCall)]
+	fake.publishArgsForCall = append(fake.publishArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 interface{}
+	}{arg1, arg2, arg3})
+	stub := fake.PublishStub
+	fakeReturns := fake.publishReturns
+	fake.recordInvocation("Publish", []interface{}{arg1, arg2, arg3})
+	fake.publishMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeTaskStorage) PublishCallCount() int {
+	fake.publishMutex.RLock()
+	defer fake.publishMutex.RUnlock()
+	return len(fake.publishArgsForCall)
+}
+
+func (fake *FakeTaskStorage) PublishCalls(stub func(context.Context, string, interface{}) *redis.IntCmd) {
+	fake.publishMutex.Lock()
+	defer fake.publishMutex.Unlock()
+	fake.PublishStub = stub
+}
+
+func (fake *FakeTaskStorage) PublishArgsForCall(i int) (context.Context, string, interface{}) {
+	fake.publishMutex.RLock()
+	defer fake.publishMutex.RUnlock()
+	argsForCall := fake.publishArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeTaskStorage) PublishReturns(result1 *redis.IntCmd) {
+	fake.publishMutex.Lock()
+	defer fake.publishMutex.Unlock()
+	fake.PublishStub = nil
+	fake.publishReturns = struct {
+		result1 *redis.IntCmd
+	}{result1}
+}
+
+func (fake *FakeTaskStorage) PublishReturnsOnCall(i int, result1 *redis.IntCmd) {
+	fake.publishMutex.Lock()
+	defer fake.publishMutex.Unlock()
+	fake.PublishStub = nil
+	if fake.publishReturnsOnCall == nil {
+		fake.publishReturnsOnCall = make(map[int]struct {
+			result1 *redis.IntCmd
+		})
+	}
+	fake.publishReturnsOnCall[i] = struct {
+		result1 *redis.IntCmd
+	}{result1}
+}
+
 func (fake *FakeTaskStorage) SetNewTask(arg1 context.Context, arg2 *scheduler.Task) {
 	fake.setNewTaskMutex.Lock()
 	fake.setNewTaskArgsForCall = append(fake.setNewTaskArgsForCall, struct {
@@ -350,6 +439,68 @@ func (fake *FakeTaskStorage) SetNewTaskArgsForCall(i int) (context.Context, *sch
 	return argsForCall.arg1, argsForCall.arg2
 }
 
+func (fake *FakeTaskStorage) Subscribe(arg1 context.Context, arg2 ...string) *redis.PubSub {
+	fake.subscribeMutex.Lock()
+	ret, specificReturn := fake.subscribeReturnsOnCall[len(fake.subscribeArgsForCall)]
+	fake.subscribeArgsForCall = append(fake.subscribeArgsForCall, struct {
+		arg1 context.Context
+		arg2 []string
+	}{arg1, arg2})
+	stub := fake.SubscribeStub
+	fakeReturns := fake.subscribeReturns
+	fake.recordInvocation("Subscribe", []interface{}{arg1, arg2})
+	fake.subscribeMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2...)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeTaskStorage) SubscribeCallCount() int {
+	fake.subscribeMutex.RLock()
+	defer fake.subscribeMutex.RUnlock()
+	return len(fake.subscribeArgsForCall)
+}
+
+func (fake *FakeTaskStorage) SubscribeCalls(stub func(context.Context, ...string) *redis.PubSub) {
+	fake.subscribeMutex.Lock()
+	defer fake.subscribeMutex.Unlock()
+	fake.SubscribeStub = stub
+}
+
+func (fake *FakeTaskStorage) SubscribeArgsForCall(i int) (context.Context, []string) {
+	fake.subscribeMutex.RLock()
+	defer fake.subscribeMutex.RUnlock()
+	argsForCall := fake.subscribeArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeTaskStorage) SubscribeReturns(result1 *redis.PubSub) {
+	fake.subscribeMutex.Lock()
+	defer fake.subscribeMutex.Unlock()
+	fake.SubscribeStub = nil
+	fake.subscribeReturns = struct {
+		result1 *redis.PubSub
+	}{result1}
+}
+
+func (fake *FakeTaskStorage) SubscribeReturnsOnCall(i int, result1 *redis.PubSub) {
+	fake.subscribeMutex.Lock()
+	defer fake.subscribeMutex.Unlock()
+	fake.SubscribeStub = nil
+	if fake.subscribeReturnsOnCall == nil {
+		fake.subscribeReturnsOnCall = make(map[int]struct {
+			result1 *redis.PubSub
+		})
+	}
+	fake.subscribeReturnsOnCall[i] = struct {
+		result1 *redis.PubSub
+	}{result1}
+}
+
 func (fake *FakeTaskStorage) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -361,8 +512,12 @@ func (fake *FakeTaskStorage) Invocations() map[string][][]interface{} {
 	defer fake.getAllTasksMutex.RUnlock()
 	fake.getAllTasksPaginationMutex.RLock()
 	defer fake.getAllTasksPaginationMutex.RUnlock()
+	fake.publishMutex.RLock()
+	defer fake.publishMutex.RUnlock()
 	fake.setNewTaskMutex.RLock()
 	defer fake.setNewTaskMutex.RUnlock()
+	fake.subscribeMutex.RLock()
+	defer fake.subscribeMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
