@@ -32,7 +32,9 @@ func main() {
 	scheduler.SetUpSubscriber(ctx)
 
 	taskExecutor := worker.NewTaskExecutor(c, s)
-	taskExecutor.SetUpSubscriber(ctx)
+	if c.WorkerEnable {
+		taskExecutor.SetUpSubscriber(ctx)
+	}
 
 	//start server
 	stopServer := httpserver.NewServer(ctx, nil, scheduler, c)
@@ -56,7 +58,9 @@ func main() {
 	log.Println("⏳  Stopping all services...")
 	cancel()
 	scheduler.Stop()
-	taskExecutor.Stop()
+	if c.WorkerEnable {
+		taskExecutor.Stop()
+	}
 	redisClientClose()
 	producerClose()
 	stopServer()

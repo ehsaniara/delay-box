@@ -1,4 +1,5 @@
 frequency: 100
+workerEnable: true #pub-sub only and no worker will execute the tasks
 httpServer:
   port: 8088
   mode: debug # or release

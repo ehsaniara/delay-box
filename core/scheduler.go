@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/ehsaniara/delay-box/config"
@@ -83,6 +84,13 @@ func (s *scheduler) Schedule(pyload string, header map[string]string) error {
 	if err != nil {
 		fmt.Printf("Error decoding base64 string: %v\n", err)
 		return err
+	}
+
+	taskType, ok := header["taskType"]
+	if !ok {
+		if taskType != "PUB_SUB" && !s.config.WorkerEnable {
+			return errors.New("worker is not enable for none PUB_SUB taskTypes")
+		}
 	}
 
 	// assigning to header

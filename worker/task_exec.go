@@ -35,6 +35,11 @@ type taskExecutor struct {
 }
 
 func NewTaskExecutor(config *config.Config, storage storage.TaskStorage) TaskExecutor {
+	if !config.WorkerEnable {
+		log.Printf("✔️ TaskExecutor is disabled")
+		return nil
+	}
+
 	log.Printf("✔️ TaskExecutor is waiting to start..")
 	// List of potential shells
 	shells := []string{"sh", "bash", "zsh"}
