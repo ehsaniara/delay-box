@@ -11,10 +11,11 @@ const (
 )
 
 type Config struct {
-	HttpServer HttpServerConfig
-	Storage    StorageConfig
-	Kafka      KafkaConfig
-	Frequency  int32
+	HttpServer   HttpServerConfig
+	Storage      StorageConfig
+	Kafka        KafkaConfig
+	Frequency    int32
+	WorkerEnable bool
 }
 
 type HttpServerConfig struct {
@@ -57,6 +58,7 @@ func GetConfig() *Config {
 
 func Print(config *Config) {
 	log.Printf("Frequency: %d\n", config.Frequency)
+	log.Printf("WorkerEnable: %v\n", config.WorkerEnable)
 	log.Printf("Server port: %d\n", config.HttpServer.Port)
 	log.Printf("Server mode: %s\n", config.HttpServer.Mode)
 	log.Printf("Server context path: %s\n", config.HttpServer.ContextPath)
