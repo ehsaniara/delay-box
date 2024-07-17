@@ -14,12 +14,13 @@ This project contains the following components:
 Make sure to have Docker Compose installed on your machine, then run the Docker Compose command:
 
 ```shell
-docker-compose up -d
+export COMPOSE_PROJECT_NAME=delay-box
+docker-compose -p delay-box up -d
 ```
 
 This command builds the latest images and starts the services in detached mode.
 
-- To access Kafka UI, navigate to: [http://localhost:8080/kafka-ui-ts/](http://localhost:8080/kafka-ui-ts/)
+- To access Kafka UI, navigate to: [http://localhost:8080/kafka-ui-dbwk/](http://localhost:8080/kafka-ui-dbwk/)
 
 Wait until all workers are up and running (you'll see a message in their console: "🚀 scheduler is ready!").
 

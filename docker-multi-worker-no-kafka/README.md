@@ -4,6 +4,7 @@
 This project contains the following components:
 - **Redis**: In-memory data structure store used as a database, cache, and message broker.
 - **3 Workers**: Task workers responsible for executing scheduled tasks. Each worker can process tasks independently, providing horizontal scalability.
+- **Nginx**: Loadbalancer and revers proxy at front of 3 worker nodes (application).
 
 ## Quick Start
 
@@ -11,7 +12,7 @@ Make sure to have Docker Compose installed on your machine, then run the Docker 
 
 ```shell
 export COMPOSE_PROJECT_NAME=delay-box
- docker-compose -p delay-box up -d
+docker-compose -p delay-box up -d
 ```
 
 This command builds the latest images and starts the services in detached mode.

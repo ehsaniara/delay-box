@@ -11,7 +11,7 @@
 
 **DelayBox** is a High Throughput Distributed Task Scheduler ⚡. It is an advanced system designed to manage and execute a vast number of tasks across a distributed network of servers. Built on top of the **Redis** database, it leverages Redis's high-speed in-memory data store 🔥 for quick access and efficient task management.
 
-This scheduler ensures optimal performance and reliability by utilizing protobuf for efficient data serialization and gRPC for robust communication between services. It features intelligent load balancing, dynamic scaling, and fault tolerance to handle high volumes of concurrent tasks without bottlenecks.
+This scheduler ensures optimal performance and reliability by utilizing protobuf for efficient data serialization. It can feature intelligent load balancing, dynamic scaling, and fault tolerance to handle high volumes of concurrent tasks without bottlenecks.
 
 🎨 DelayBox also includes a centralized task delay mechanism, allowing precise control over task execution timings, which is critical for workflows requiring synchronized or delayed task processing. Additionally, the system offers the flexibility to integrate with **Kafka**, enabling seamless event streaming and message queuing for enhanced data processing capabilities.
 
@@ -29,7 +29,7 @@ This scheduler ensures optimal performance and reliability by utilizing protobuf
 # Examples
 ## Docker Compose
 
-### 3 Worker Node with Kafka
+### 3 Worker Nodes with Kafka
 
 clone the project 
 ```shell
@@ -45,7 +45,9 @@ sh ./create-task.sh
 
 You can try the docker compose example with 3 worker nodes example [docker-compose example with kafka](./docker-multi-worker) 
 
-### 3 Worker Node with Kafka
+### 3 Worker Nodes 
+
+Keep in mind that in this setup Delay-Box gets advantage og redis pub sub, so you are limited to single Redis node.
 
 clone the project
 ```shell
@@ -106,3 +108,16 @@ This fild is stored as byte format and published in kafka topic `taskExecutionTo
 <p align="center">
   <img src="docs/diagram1.png" alt="General Architecture"/>
 </p>
+
+
+## Enable Kafka
+
+To enable kafka support add the following config.
+```shell
+kafka:
+  enabled: true
+  brokers: localhost:9092
+  group: scheduler
+  schedulerTopic: Scheduler
+  taskExecutionTopic: TaskExecution
+```

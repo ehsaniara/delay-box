@@ -14,7 +14,7 @@ services:
       - ts-network
 
   worker-ts:
-    image: ghcr.io/ehsaniara/delay-box:docker-multi-worker-latest
+    build: .
     volumes:
       - ./config_multi_worker.yaml:/app/config/config.yaml
     environment:

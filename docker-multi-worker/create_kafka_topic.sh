@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # Replace with your topics name from config_multi_worker.yaml
-topics=("Scheduler" "TaskExecution")
+topics=("TaskExecution" "Scheduler")
 
 PARTITIONS=3
 REPLICATION_FACTOR=1
-BOOTSTRAP_SERVER=kafka-ts:9092
+BOOTSTRAP_SERVER=kafka-dbwk:9092
 
 
 # Wait for Kafka to be ready
 echo "Waiting for Kafka to start..."
-while ! echo "exit" | nc -z kafka-ts 9092; do sleep 5; done
+while ! echo "exit" | nc -z kafka-dbwk 9092; do sleep 5; done
 
 
 # Loop through the array of topics and create each one

@@ -82,7 +82,6 @@ func (t *taskExecutor) SetUpSubscriber(ctx context.Context) {
 }
 
 func (t *taskExecutor) ExecuteCommandConsumerKafka(message *sarama.ConsumerMessage) {
-	log.Printf("TaskExecutor Message claimed: value = %s, timestamp = %v, topic = %s\n", string(message.Value), message.Timestamp, message.Topic)
 
 	var task _pb.Task
 
