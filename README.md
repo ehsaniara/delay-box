@@ -50,7 +50,8 @@ You can try the docker compose example with 3 worker nodes example [docker-compo
 clone the project
 ```shell
 cd docker-multi-worker-no-kafka
-docker-compose -f docker-compose.yml up -d
+export COMPOSE_PROJECT_NAME=delay-box
+docker-compose -p delay-box -f docker-compose.yml up -d
 ```
 Wait until all worker nodes are up and running (you'll see in their console: "🚀 scheduler is ready!"). Then run the following command to create 1000 tasks which designed to execute in 10 second. (tasks just simply print the date in the worker nodes console)
 

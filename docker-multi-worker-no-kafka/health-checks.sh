@@ -2,7 +2,7 @@
 
 # Check if backend servers are healthy and update NGINX configuration
 
-BACKENDS=("docker-multi-worker-worker-ts-1" "docker-multi-worker-worker-ts-2" "docker-multi-worker-worker-ts-3")
+BACKENDS=("delay-box-worker-ts-1" "delay-box-worker-ts-2" "delay-box-worker-ts-3")
 CONFIG_FILE="/etc/nginx/conf.d/upstream.conf"
 TMP_FILE="/tmp/upstream.conf.tmp"
 
