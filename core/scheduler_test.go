@@ -127,7 +127,8 @@ func Test_Serve(t *testing.T) {
 	defer cancel()
 
 	c := config.Config{
-		Frequency: int32(10),
+		WorkerEnable: true,
+		Frequency:    int32(10),
 		Kafka: config.KafkaConfig{
 			Enabled: true,
 		},
@@ -155,7 +156,8 @@ func Test_scheduler_run_Eval_with_value(t *testing.T) {
 	defer cancel()
 
 	c := config.Config{
-		Frequency: int32(50),
+		WorkerEnable: true,
+		Frequency:    int32(50),
 		Storage: config.StorageConfig{
 			SchedulerKeyName: schedulerKeyName,
 		},
@@ -288,7 +290,8 @@ func Test_scheduler_Schedule(t *testing.T) {
 		Kafka: config.KafkaConfig{
 			Enabled: true,
 		},
-		Frequency: 100,
+		Frequency:    100,
+		WorkerEnable: true,
 	}
 
 	header := map[string]string{config.ExecutionTimestamp: fmt.Sprintf("%d", time.Now().Add(time.Second).UnixMilli())}
