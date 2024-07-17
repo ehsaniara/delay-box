@@ -31,6 +31,10 @@ type producer struct {
 
 func NewProducer(config *config.Config) (SyncProducer, func()) {
 
+	if !config.Kafka.Enabled {
+		return nil, nil
+	}
+
 	if len(config.Kafka.Brokers) == 0 {
 		log.Fatal("brokers host is missing")
 	}

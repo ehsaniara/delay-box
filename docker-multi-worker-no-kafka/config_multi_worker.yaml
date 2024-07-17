@@ -2,7 +2,7 @@ frequency: 100
 httpServer:
   port: 8088
   mode: debug # or release
-  contextPath: /
+  contextPath: /api/
 
 storage:
   redisHost: localhost:6379
@@ -11,10 +11,3 @@ storage:
   schedulerChanel: Scheduler
   taskExecutionChanel: TaskExecution
   schedulerKeyName: scheduled_tasks
-
-kafka:
-  enabled: true
-  brokers: localhost:9092
-  group: scheduler
-  schedulerTopic: Scheduler
-  taskExecutionTopic: TaskExecution

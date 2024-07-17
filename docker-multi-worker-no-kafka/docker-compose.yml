@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  redis-ts:
+    image: 'redis:latest'
+    container_name: redis-ts
+    command:
+      - --requirepass secret
+    ports:
+      - '6379:6379'
+    environment:
+      - REDIS_PASSWORD=secret
+    networks:
+      - ts-network
+
+  worker-ts:
+    image: ghcr.io/ehsaniara/delay-box:docker-multi-worker-latest
+    volumes:
+      - ./config_multi_worker.yaml:/app/config/config.yaml
+    environment:
+      - REDIS_HOST=redis-ts:6379
+      - REDIS_PASS=secret
+    depends_on:
+      redis-ts:
+        condition: service_started
+    networks:
+      - ts-network
+    deploy:
+      replicas: 3
+
+  nginx-ts:
+    container_name: nginx-ts
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "8088:8088"
+    networks:
+      - ts-network
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - worker-ts
+
+networks:
+  ts-network:
+    driver: bridge

@@ -29,21 +29,37 @@ This scheduler ensures optimal performance and reliability by utilizing protobuf
 # Examples
 ## Docker Compose
 
-after cloning the project 
+### 3 Worker Node with Kafka
+
+clone the project 
 ```shell
 cd docker-multi-worker
 docker-compose -f docker-compose.yml up -d
 ```
 Wait until all worker nodes are up and running (you'll see in their console: "🚀 scheduler is ready!"). Then run the following command to create 1000 tasks which designed to execute in 10 second. (tasks just simply print the date in the worker nodes console)
 
+```shell
+sh ./create-task.sh
+```
 **Note:** your terminal console will only print  `{"message":"task created"}` 1000 times, but the worker consoles shows the date. (in this example its docker logs)
+
+You can try the docker compose example with 3 worker nodes example [docker-compose example with kafka](./docker-multi-worker) 
+
+### 3 Worker Node with Kafka
+
+clone the project
+```shell
+cd docker-multi-worker-no-kafka
+docker-compose -f docker-compose.yml up -d
+```
+Wait until all worker nodes are up and running (you'll see in their console: "🚀 scheduler is ready!"). Then run the following command to create 1000 tasks which designed to execute in 10 second. (tasks just simply print the date in the worker nodes console)
 
 ```shell
 sh ./create-task.sh
 ```
+**Note:** your terminal console will only print  `{"message":"task created"}` 1000 times, but the worker consoles shows the date. (in this example its docker logs)
 
-
-You can try the docker compose example with 3 worker nodes example [here](./docker-multi-worker) 
+You can try the docker compose example with 3 worker nodes example [ocker-compose example without kafka](./docker-multi-worker-no-kafka)
 
 
 ## Local Example
