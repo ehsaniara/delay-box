@@ -213,7 +213,6 @@ func TestNewRedisClient(t *testing.T) {
 	c := config.Config{
 		Storage: config.StorageConfig{
 			RedisHost:        redisAddr,
-			Chanel:           "",
 			SchedulerKeyName: schedulerKeyName,
 		},
 	}

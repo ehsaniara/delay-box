@@ -11,7 +11,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 )
 
@@ -30,24 +29,10 @@ func main() {
 
 	// starting the scheduler app
 	scheduler := core.NewScheduler(ctx, s, producer, c)
+	scheduler.SetUpSubscriber(ctx)
 
-	//start all consumers 1
-	consumerGroup1 := kafka.NewConsumerGroup(c)
-	dispatchSchedulerConsumer := kafka.NewConsumer(
-		strings.Split(c.Kafka.SchedulerTopic, `,`),
-		consumerGroup1,
-		scheduler.Dispatcher,
-	)
-	dispatchSchedulerConsumer.Start(ctx)
-
-	newTaskExecutor := worker.NewTaskExecutor()
-	consumerGroup2 := kafka.NewConsumerGroup(c)
-	dispatchTaskExecutorConsumer := kafka.NewConsumer(
-		strings.Split(c.Kafka.TaskExecutionTopic, `,`),
-		consumerGroup2,
-		newTaskExecutor.ExecuteCommand,
-	)
-	dispatchTaskExecutorConsumer.Start(ctx)
+	taskExecutor := worker.NewTaskExecutor(c, s)
+	taskExecutor.SetUpSubscriber(ctx)
 
 	//start server
 	stopServer := httpserver.NewServer(ctx, nil, scheduler, c)
@@ -71,8 +56,7 @@ func main() {
 	log.Println("⏳  Stopping all services...")
 	cancel()
 	scheduler.Stop()
-	dispatchSchedulerConsumer.Stop()
-	dispatchTaskExecutorConsumer.Stop()
+	taskExecutor.Stop()
 	redisClientClose()
 	producerClose()
 	stopServer()

@@ -8,7 +8,8 @@ storage:
   redisHost: ${REDIS_HOST}
   redisPass: ${REDIS_PASS}
   redisDb: 0
-  chanel: schedule_chanel
+  schedulerChanel: Scheduler
+  taskExecutionChanel: TaskExecution
   schedulerKeyName: scheduled_tasks
 
 kafka:
