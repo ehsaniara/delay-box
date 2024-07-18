@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/IBM/sarama"
 	"github.com/spf13/viper"
 	"log"
 	"os"
@@ -41,6 +42,12 @@ type KafkaConfig struct {
 	Group              string
 	SchedulerTopic     string
 	TaskExecutionTopic string
+	//IBM-specific configuration
+	SaslEnabled   bool
+	SaslUser      string
+	SaslPassword  string
+	SaslMechanism sarama.SASLMechanism
+	TlsEnable     bool
 }
 
 func GetConfig() *Config {
@@ -94,6 +101,7 @@ func LoadConfig(path string) (*Config, error) {
 	_ = viper.BindEnv("storage.redisHost", "REDIS_HOST")
 	_ = viper.BindEnv("storage.redisPass", "REDIS_PASS")
 	_ = viper.BindEnv("kafka.brokers", "BROKERS")
+	_ = viper.BindEnv("workerEnable", "WORKER_ENABLE")
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {

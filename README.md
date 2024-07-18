@@ -25,6 +25,9 @@ This scheduler ensures optimal performance and reliability by utilizing protobuf
 
 ✅ It is ideal for applications requiring massive parallel processing capabilities, such as data processing pipelines, large-scale simulations, and real-time analytics.
 
+<p align="center">
+  <img src="docs/WorkFlow-1.png" alt="General Architecture"/>
+</p>
 
 # Examples
 ## Docker Compose
@@ -62,7 +65,7 @@ sh ./create-task.sh
 ```
 **Note:** your terminal console will only print  `{"message":"task created"}` 1000 times, but the worker consoles shows the date. (in this example its docker logs)
 
-You can try the docker compose example with 3 worker nodes example [ocker-compose example without kafka](./docker-multi-worker-no-kafka)
+You can try the docker compose example with 3 worker nodes example [Docker-compose example without kafka](./docker-multi-worker-no-kafka)
 
 
 ## Local Example

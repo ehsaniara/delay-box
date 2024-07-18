@@ -24,6 +24,20 @@ func NewConsumerGroup(config *config.Config) interfaces.ConsumerGroup {
 
 	brokers := strings.Split(config.Kafka.Brokers, `,`)
 
+	// IBM-specific configuration
+	if config.Kafka.SaslEnabled {
+		// config.Net.SASL.Enable = true
+		c.Net.SASL.Enable = config.Kafka.SaslEnabled
+		// config.Net.SASL.User = "<api-key>"
+		c.Net.SASL.User = config.Kafka.SaslUser
+		// config.Net.SASL.Password = "<api-secret>"
+		c.Net.SASL.Password = config.Kafka.SaslPassword
+		// config.Net.SASL.Mechanism = sarama.SASLTypePlaintext
+		c.Net.SASL.Mechanism = config.Kafka.SaslMechanism
+	}
+	// config.Net.TLS.Enable = true
+	c.Net.TLS.Enable = config.Kafka.TlsEnable
+
 	// Setting up the consumer group
 	cg, err := sarama.NewConsumerGroup(brokers, config.Kafka.Group, c)
 	if err != nil {
