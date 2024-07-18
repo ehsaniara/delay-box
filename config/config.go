@@ -84,6 +84,11 @@ func Print(config *Config) {
 	log.Printf("kafka brokers: %s\n", config.Kafka.Brokers)
 	log.Printf("schedulerTopic: %s\n", config.Kafka.SchedulerTopic)
 	log.Printf("taskExecutionTopic: %s\n", config.Kafka.TaskExecutionTopic)
+	log.Printf("SaslEnabled: %v\n", config.Kafka.SaslEnabled)
+	log.Printf("SaslUser: %s\n", config.Kafka.SaslUser)
+	log.Printf("SaslPassword: %s\n", config.Kafka.SaslPassword)
+	log.Printf("SaslMechanism: %s\n", config.Kafka.SaslMechanism)
+	log.Printf("TlsEnable: %v\n", config.Kafka.TlsEnable)
 }
 
 func LoadConfig(path string) (*Config, error) {

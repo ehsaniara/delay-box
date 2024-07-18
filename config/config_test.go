@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -32,14 +33,27 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "TaskExecution", config.Kafka.TaskExecutionTopic)
 }
 
-//func TestLoadConfigFromEnv(t *testing.T) {
-//	err := os.Setenv("REDIS_HOST", "XXX")
-//	assert.NoError(t, err)
-//
-//	viper.AutomaticEnv()
-//
-//	config, err := LoadConfig("config.yaml")
-//	assert.NoError(t, err)
-//	assert.NotNil(t, config)
-//	assert.Equal(t, "XXX", config.Storage.RedisPass)
-//}
+func TestLoadConfigFromEnv(t *testing.T) {
+	// Set environment variable
+	err := os.Setenv("REDIS_HOST", "XXX")
+	err = os.Setenv("REDIS_PASS", "YYY")
+	err = os.Setenv("BROKERS", "ZZZ")
+	assert.NoError(t, err)
+
+	// Automatically read environment variables
+	viper.AutomaticEnv()
+
+	// Bind the environment variable to the config key
+	viper.BindEnv("storage.redisHost", "REDIS_HOST")
+	viper.BindEnv("storage.redispass", "REDIS_PASS")
+	viper.BindEnv("kafka.brokers", "BROKERS")
+
+	config, err := LoadConfig("config.yaml")
+	assert.NoError(t, err)
+	assert.NotNil(t, config)
+	assert.Equal(t, 8088, config.HttpServer.Port)
+	// should be overridden
+	assert.Equal(t, "XXX", config.Storage.RedisHost)
+	assert.Equal(t, "YYY", config.Storage.RedisPass)
+	assert.Equal(t, "ZZZ", config.Kafka.Brokers)
+}
