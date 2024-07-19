@@ -1,5 +1,8 @@
 package core
 
+// You only need **one** of these per package!
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"context"
 	"encoding/base64"

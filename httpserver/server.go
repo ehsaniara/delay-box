@@ -18,6 +18,11 @@ import (
 	"time"
 )
 
+const (
+	ContentType     = "Content-Type"
+	ContentTypeJSON = "application/json"
+)
+
 type server struct {
 	httpPort                 int
 	httpServer               HTTPServer
@@ -64,7 +69,7 @@ func (s *server) stopServer() {
 }
 
 func (s *server) setupGinRouter() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(s.config.HttpServer.Mode)
 	r := gin.Default()
 	r.GET(fmt.Sprintf("%sping", s.config.HttpServer.ContextPath), s.PingHandler)
 	r.GET(fmt.Sprintf("%stask", s.config.HttpServer.ContextPath), s.GetAllTasksHandler)
@@ -192,9 +197,15 @@ type ConvertHeaderToParameterFn func(header map[string][]byte) map[string]string
 // ConvertHeaderToParameter return map[string]string
 func convertHeaderToParameter(header map[string][]byte) map[string]string {
 	var pbHeader = make(map[string]string)
+
+	if header == nil {
+		return pbHeader
+	}
+
 	for k, v := range header {
 		// Encode the serialized protobuf message to a Base64 encoded string
-		pbHeader[k] = base64.StdEncoding.EncodeToString(v)
+		//pbHeader[k] = base64.StdEncoding.EncodeToString(v)
+		pbHeader[k] = string(v)
 	}
 	return pbHeader
 }
