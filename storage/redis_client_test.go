@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/ehsaniara/delay-box/config"
@@ -14,6 +15,7 @@ import (
 	"go.uber.org/goleak"
 	"google.golang.org/protobuf/proto"
 	"log"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -247,6 +249,36 @@ func TestRedisClient_SetUp(t *testing.T) {
 	pong, err := client.rdb.Ping(ctx).Result()
 	require.NoError(t, err, "Ping should not return an error")
 	assert.Equal(t, "PONG", pong, "Ping response should be PONG")
+}
+
+// A helper function to replace log.Fatal in tests
+func replaceLogFatal(f func(format string, v ...interface{})) func() {
+	old := logFatal
+	logFatal = f
+	return func() { logFatal = old }
+}
+
+func TestRedisClient_SetUp_fail(t *testing.T) {
+	// Capture the log output
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr) // Restore original log output
+
+	// Replace logFatal with a custom function
+	restoreLogFatal := replaceLogFatal(func(format string, v ...interface{}) {
+		fmt.Fprintf(&buf, format, v...)
+	})
+
+	// Ensure logFatal is restored after the test
+	defer restoreLogFatal()
+
+	defer goleak.VerifyNone(t)
+
+	ctx := context.Background()
+
+	client := &taskRedisClient{}
+	client.SetUp(ctx, "", "", 0)
+	//t.Error("redisHost is missing", buf.String())
 }
 
 // TestEval checks the Eval method with a mock Redis client.

@@ -91,6 +91,9 @@ func Print(config *Config) {
 	log.Printf("TlsEnable: %v\n", config.Kafka.TlsEnable)
 }
 
+// logFatal is a function variable to allow easy replacement in tests
+var logFatal = log.Fatalf
+
 func LoadConfig(path string) (*Config, error) {
 	viper.SetConfigName(path)
 	viper.SetConfigType("yaml")
@@ -98,7 +101,7 @@ func LoadConfig(path string) (*Config, error) {
 	viper.AutomaticEnv() // Automatically override with environment variables
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Error reading config file: %v", err)
+		logFatal("Error reading config file: %v", err)
 	}
 	//to override config
 	viper.SetEnvPrefix("app")

@@ -1,12 +1,48 @@
 package config
 
 import (
+	"bytes"
+	"fmt"
+	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
+
+// A helper function to replace log.Fatal in tests
+func replaceLogFatal(f func(format string, v ...interface{})) func() {
+	old := logFatal
+	logFatal = f
+	return func() { logFatal = old }
+}
+
+func TestLoadConfigMissing(t *testing.T) {
+	// Capture the log output
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr) // Restore original log output
+
+	// Replace logFatal with a custom function
+	restoreLogFatal := replaceLogFatal(func(format string, v ...interface{}) {
+		_, err := fmt.Fprintf(&buf, format, v...)
+		assert.NoError(t, err)
+	})
+
+	// Ensure logFatal is restored after the test
+	defer restoreLogFatal()
+
+	// Call the main function
+	_, _ = LoadConfig("aaa.yaml")
+
+	// Check the log output
+	expected := "Error reading config file: Config File \"aaa.yaml\" Not Found in"
+	if !strings.HasPrefix(buf.String(), expected) {
+		t.Errorf("expected %q, but got %q", expected, buf.String())
+	}
+}
 
 func TestLoadConfig(t *testing.T) {
 	viper.AutomaticEnv()

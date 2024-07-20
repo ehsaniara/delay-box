@@ -17,6 +17,9 @@ import (
 	"time"
 )
 
+// logFatal is a function variable to allow easy replacement in tests
+var logFatal = log.Fatalf
+
 // indicator to see if *redis.Client are exist
 var _ interfaces.RedisDBClient = (*redis.Client)(nil)
 
@@ -25,7 +28,7 @@ var _ interfaces.RedisDBClient = (*redis.Client)(nil)
 func NewRedisClient(ctx context.Context, config *config.Config) (TaskStorage, func()) {
 
 	if len(config.Storage.RedisHost) == 0 {
-		log.Fatal("redisHost is missing")
+		logFatal("redisHost is missing")
 	}
 
 	client := &taskRedisClient{
@@ -63,7 +66,7 @@ func (c *taskRedisClient) Subscribe(ctx context.Context, channels ...string) *re
 func (c *taskRedisClient) SetUp(ctx context.Context, redisHost, redisPass string, database int) {
 
 	if len(redisHost) == 0 {
-		log.Fatal("redisHost is missing")
+		logFatal("redisHost is missing")
 	}
 
 	log.Printf("⏳  Redis Setting up... \n")
@@ -78,7 +81,7 @@ func (c *taskRedisClient) SetUp(ctx context.Context, redisHost, redisPass string
 	log.Printf("✔️ Redis Ping: %v\n", pong)
 
 	if err != nil {
-		log.Fatalf("Redis Connection Failed: %v\n", c.rdb)
+		logFatal("Redis Connection Failed: %v\n", c.rdb)
 	}
 }
 
@@ -97,7 +100,7 @@ func (c *taskRedisClient) SetNewTask(ctx context.Context, task *_pb.Task) {
 	task.TaskUuid = uuid.NewString()
 	marshal, err := proto.Marshal(task)
 	if err != nil {
-		fmt.Println("❌  Error: marshal", err)
+		log.Println("❌  Error: marshal", err)
 		return
 	}
 

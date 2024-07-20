@@ -34,13 +34,43 @@ func Test_convertHeaderToParameter(t *testing.T) {
 	}
 }
 
+func TestPingHandler(t *testing.T) {
+	// Create a new Gin engine and context
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+
+	// Create a mock scheduler
+	s := &server{}
+
+	// Register the handler function
+	router.GET("/task", s.PingHandler)
+
+	// Create a new HTTP request
+	req, err := http.NewRequest("GET", "/ping", nil)
+	req.Header.Set(ContentType, ContentTypeJSON)
+	assert.NoError(t, err)
+
+	// Set the request context to the Gin context
+	ctx.Request = req
+
+	// Call the handler function directly
+	s.PingHandler(ctx)
+
+	// Verify the response
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.Equal(t, `pong`, recorder.Body.String())
+}
+
 func TestSetNewTaskHandler(t *testing.T) {
 	// Create a new Gin engine and context
 	gin.SetMode(gin.TestMode)
 
 	router := gin.New()
 	recorder := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(recorder)
+	ctx, _ := gin.CreateTestContext(recorder)
 
 	fakeScheduler := &corefakes.FakeScheduler{}
 
@@ -68,10 +98,10 @@ func TestSetNewTaskHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Set the request context to the Gin context
-	c.Request = req
+	ctx.Request = req
 
 	// Call the handler function directly
-	s.SetNewTaskHandler(c)
+	s.SetNewTaskHandler(ctx)
 
 	// Verify the response
 	assert.Equal(t, http.StatusOK, recorder.Code)
@@ -84,7 +114,7 @@ func TestGetAllTasksHandler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	recorder := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(recorder)
+	ctx, _ := gin.CreateTestContext(recorder)
 
 	fakeScheduler := &corefakes.FakeScheduler{}
 	// Create a mock scheduler
@@ -97,11 +127,12 @@ func TestGetAllTasksHandler(t *testing.T) {
 	router.GET("/task", s.GetAllTasksHandler)
 
 	// Create a new HTTP request with query parameters
-	req, err := http.NewRequest("GET", "/task?offset=0&limit=10", nil)
+	// not passing offset and limits
+	req, err := http.NewRequest("GET", "/task", nil)
 	assert.NoError(t, err)
 
 	// Set the request context to the Gin context
-	c.Request = req
+	ctx.Request = req
 
 	uuid1 := "0eeb435b-3099-4750-9fb4-a5968032269b"
 	uuid2 := "7877f20e-c544-432e-bd57-4a5c883e3f30"
@@ -124,7 +155,7 @@ func TestGetAllTasksHandler(t *testing.T) {
 	})
 
 	// Call the handler function directly
-	s.GetAllTasksHandler(c)
+	s.GetAllTasksHandler(ctx)
 
 	// Verify the response
 	assert.Equal(t, http.StatusOK, recorder.Code)

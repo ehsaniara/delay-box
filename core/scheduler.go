@@ -6,7 +6,6 @@ package core
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/ehsaniara/delay-box/config"
@@ -92,7 +91,7 @@ func (s *scheduler) Schedule(pyload string, header map[string]string) error {
 	taskType, ok := header["taskType"]
 	if !ok {
 		if taskType != "PUB_SUB" && !s.config.WorkerEnable {
-			return errors.New("worker is not enable for none PUB_SUB taskTypes")
+			return fmt.Errorf("worker is not enable for none PUB_SUB taskTypes")
 		}
 	}
 

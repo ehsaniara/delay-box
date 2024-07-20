@@ -23,6 +23,9 @@ const (
 	ContentTypeJSON = "application/json"
 )
 
+// logFatal is a function variable to allow easy replacement in tests
+var logFatal = log.Fatalf
+
 type server struct {
 	httpPort                 int
 	httpServer               HTTPServer
@@ -79,7 +82,7 @@ func (s *server) setupGinRouter() *gin.Engine {
 
 func (s *server) runServer(ctx context.Context) {
 	if s.httpPort == 0 {
-		log.Fatal("HTTP_PORT environment variable is missing")
+		logFatal("HTTP_PORT environment variable is missing")
 	}
 
 	// at test case it will be mocked
@@ -112,14 +115,14 @@ func (s *server) runServer(ctx context.Context) {
 		defer cancel()
 
 		if err := s.httpServer.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("Error during server shutdown: %v", err)
+			logFatal("Error during server shutdown: %v", err)
 		}
 
 		log.Println("Server stopped gracefully")
 
 	case err := <-serverErrors:
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("Server encountered an error: %v", err)
+			logFatal("Server encountered an error: %v", err)
 		}
 	}
 
