@@ -210,6 +210,8 @@ func TestNewRedisClient(t *testing.T) {
 
 	redisHost, _ := redisContainer.Host(ctx)
 	redisPort, err := redisContainer.MappedPort(ctx, "6379")
+	assert.NoError(t, err)
+
 	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort.Port())
 
 	c := config.Config{
@@ -236,6 +238,7 @@ func TestRedisClient_SetUp(t *testing.T) {
 
 	redisHost, _ := redisContainer.Host(ctx)
 	redisPort, err := redisContainer.MappedPort(ctx, "6379")
+	assert.NoError(t, err)
 	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort.Port())
 
 	client := &taskRedisClient{}

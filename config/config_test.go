@@ -72,7 +72,9 @@ func TestLoadConfig(t *testing.T) {
 func TestLoadConfigFromEnv(t *testing.T) {
 	// Set environment variable
 	err := os.Setenv("REDIS_HOST", "XXX")
+	assert.NoError(t, err)
 	err = os.Setenv("REDIS_PASS", "YYY")
+	assert.NoError(t, err)
 	err = os.Setenv("BROKERS", "ZZZ")
 	assert.NoError(t, err)
 

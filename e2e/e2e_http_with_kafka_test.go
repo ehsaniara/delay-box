@@ -26,6 +26,7 @@ func TestHttpBasedIntegrationTest(t *testing.T) {
 	assert.NoError(t, err)
 
 	brokers, err := kafkaContainer.Brokers(ctx)
+	assert.NoError(t, err)
 
 	// Get the Redis container's address
 	redisHost, err := redisContainer.Host(ctx)
