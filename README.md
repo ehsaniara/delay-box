@@ -1,7 +1,7 @@
 # DelayBox
 
 
-[![Go](https://github.com/ehsaniara/delay-box/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/ehsaniara/delay-box/actions/workflows/go.yml)
+[![Go](https://github.com/ehsaniara/delay-box/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/ehsaniara/delay-box/actions/workflows/go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/ehsaniara/delay-box)](https://goreportcard.com/report/github.com/ehsaniara/delay-box)
 
 
 

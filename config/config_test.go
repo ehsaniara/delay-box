@@ -80,9 +80,12 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	viper.AutomaticEnv()
 
 	// Bind the environment variable to the config key
-	viper.BindEnv("storage.redisHost", "REDIS_HOST")
-	viper.BindEnv("storage.redispass", "REDIS_PASS")
-	viper.BindEnv("kafka.brokers", "BROKERS")
+	err = viper.BindEnv("storage.redisHost", "REDIS_HOST")
+	assert.NoError(t, err)
+	err = viper.BindEnv("storage.redispass", "REDIS_PASS")
+	assert.NoError(t, err)
+	err = viper.BindEnv("kafka.brokers", "BROKERS")
+	assert.NoError(t, err)
 
 	config, err := LoadConfig("config.yaml")
 	assert.NoError(t, err)
