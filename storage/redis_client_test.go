@@ -205,10 +205,11 @@ func TestNewRedisClient(t *testing.T) {
 	ctx := context.Background()
 
 	redisContainer, err := setupContainers(ctx)
-	defer redisContainer.Terminate(ctx)
 	assert.NoError(t, err)
+	defer redisContainer.Terminate(ctx)
 
-	redisHost, _ := redisContainer.Host(ctx)
+	redisHost, err := redisContainer.Host(ctx)
+	assert.NoError(t, err)
 	redisPort, err := redisContainer.MappedPort(ctx, "6379")
 	assert.NoError(t, err)
 
