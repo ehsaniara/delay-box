@@ -9,7 +9,7 @@
   <img src="docs/delay-box-logo.png" alt="scheduler logo"/>
 </p>
 
-**DelayBox** is a High Throughput Distributed Task Scheduler ⚡. It is an advanced system designed to manage and execute a vast number of tasks across a distributed network of servers with **sub-second accuracy**. Built on top of the **Redis** database, it leverages Redis's high-speed in-memory data store 🔥 for quick access and efficient task management.
+**DelayBox** is a High Throughput Distributed **ONE-TIME** Task Scheduler ⚡. It is an advanced system designed to manage and execute a vast number of tasks across a distributed network of servers with **sub-second accuracy**. Built on top of the **Redis** database, it leverages Redis's high-speed in-memory data store 🔥 for quick access and efficient task management.
 
 This scheduler ensures optimal performance and reliability by utilizing protobuf for efficient data serialization. It can feature intelligent load balancing, dynamic scaling, and fault tolerance to handle high volumes of concurrent tasks without bottlenecks.
 
@@ -21,7 +21,7 @@ This scheduler ensures optimal performance and reliability by utilizing protobuf
 
 # Use-Case
 
-🚀 This tool simplifies the workflow for niche tasks execution by removing the need to write code to handle Redis and Kafka development complexities. It manages these tasks for you through straightforward REST calls.
+🚀 This tool simplifies the workflow for niche task execution by removing the need to write code to handle Redis and Kafka development complexities. It manages these tasks for you through straightforward REST calls.
 
 ✅ It is ideal for applications requiring massive parallel processing capabilities, such as data processing pipelines, large-scale simulations, and real-time analytics.
 
