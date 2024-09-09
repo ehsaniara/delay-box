@@ -13,6 +13,13 @@
 
 DelayBox utilizes protobuf internally at Redis and topics.
 
+## General Idea
+
+Delay box is consist of 2 topics (`Scheduler` and `Executer`)
+<p align="center">
+  <img src="docs/diagram2.svg" alt="Flow Architecture"/>
+</p>
+
 🎨 DelayBox also includes a centralized task delay mechanism, allowing precise control over task execution timings, which is critical for workflows requiring synchronized or delayed task processing. Additionally, the system offers the flexibility to integrate with **Kafka**, enabling seamless event streaming and message queuing for enhanced data processing capabilities.
 
 🎨 One of the standout features of this application is its easy horizontal scalability, allowing it to grow and adapt to increasing workloads effortlessly by adding more servers to the network. Equipped with sophisticated algorithms for task prioritization and resource allocation, this scheduler ensures that critical tasks are executed promptly.
