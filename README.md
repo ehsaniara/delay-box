@@ -11,11 +11,11 @@
 
 **DelayBox** is a High Throughput Distributed **ONE-TIME** Task Scheduler ⚡. It is an advanced system designed to manage and execute a vast number of tasks across a distributed network of servers with **sub-second accuracy**. Built on top of the **Redis** database, it leverages Redis's high-speed in-memory data store 🔥 for quick access and efficient task management.
 
-DelayBox utilizes protobuf internally at Redis and topics.
+DelayBox utilizes ProtoBuf internally at Redis and topics.
 
 ## General Idea
 
-Delay box is consist of 2 topics (`Scheduler` and `Executer`)
+DelayBox consists of 2 topics (`Scheduler` and `Executor`)
 <p align="center">
   <img src="docs/diagram2.svg" alt="Flow Architecture"/>
 </p>
