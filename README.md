@@ -6,20 +6,32 @@
 
 **DelayBox** is a High Throughput Distributed **ONE-TIME** Task Scheduler ⚡. It is an advanced system designed to manage and execute a vast number of tasks across a distributed network of servers with **sub-second accuracy**. Built on top of the **Redis** database, it leverages Redis's high-speed in-memory data store 🔥 for quick access and efficient task management.
 
-DelayBox utilizes ProtoBuf internally at Redis and topics.
+# Why DelayBox
 
-## General Idea
+**DelayBox** is a concept coming from the bigger domain of scheduling and handling delays in distributed systems, mainly towards the improvement of resilience, consistency, and fault tolerance of distributed applications. It is a middleware component that can be used to buffer messages or events with the intention of creating delays to manage distributed timing issues.
 
-DelayBox consists of 2 topics (`Scheduler` and `Executor`)
+
 <p align="center">
   <img src="docs/diagram2.svg" alt="Flow Architecture" />
 </p>
 
-🎨 DelayBox also includes a centralized task delay mechanism, allowing precise control over task execution timings, which is critical for workflows requiring synchronized or delayed task processing. Additionally, the system offers the flexibility to integrate with **Kafka**, enabling seamless event streaming and message queuing for enhanced data processing capabilities.
+## Read more
 
-🎨 One of the standout features of this application is its easy horizontal scalability, allowing it to grow and adapt to increasing workloads effortlessly by adding more servers to the network. Equipped with sophisticated algorithms for task prioritization and resource allocation, this scheduler ensures that critical tasks are executed promptly.
+Here’s how DelayBox can help in designing a distributed system [click hear for more.](WhyDelayBox.md)
+1. Handling Eventual Consistency: 
+2. Mitigating Network Partitions:
+3. Load Management and Throttling:
+4. Failure Recovery and Redundancy:
+5. Decoupling Components in Event-Driven Architecture:
+6. Improving Reliability in Asynchronous Workflows:
+7. Dealing with Temporal Anomalies:
+8. Application in Geo-Distributed Systems:
 
 
+
+## General Idea
+
+DelayBox consists of 2 topics (`Scheduler` and `Executor`)
 
 # Use-Case
 
