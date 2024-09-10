@@ -4,11 +4,6 @@
 [![Go](https://github.com/ehsaniara/delay-box/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/ehsaniara/delay-box/actions/workflows/go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/ehsaniara/delay-box)](https://goreportcard.com/report/github.com/ehsaniara/delay-box)
 
 
-
-<p align="center">
-  <img src="docs/delay-box-logo.png" alt="scheduler logo"  width="100"/>
-</p>
-
 **DelayBox** is a High Throughput Distributed **ONE-TIME** Task Scheduler ⚡. It is an advanced system designed to manage and execute a vast number of tasks across a distributed network of servers with **sub-second accuracy**. Built on top of the **Redis** database, it leverages Redis's high-speed in-memory data store 🔥 for quick access and efficient task management.
 
 DelayBox utilizes ProtoBuf internally at Redis and topics.
