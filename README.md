@@ -17,15 +17,15 @@
 
 ## Read more
 
-Here’s how DelayBox can help in designing a distributed system [click hear for more.](WhyDelayBox.md)
-1. Handling Eventual Consistency: 
-2. Mitigating Network Partitions:
-3. Load Management and Throttling:
-4. Failure Recovery and Redundancy:
-5. Decoupling Components in Event-Driven Architecture:
-6. Improving Reliability in Asynchronous Workflows:
-7. Dealing with Temporal Anomalies:
-8. Application in Geo-Distributed Systems:
+Here’s how DelayBox can help in designing a distributed system [click for more.](WhyDelayBox.md)
+1. Handling Eventual Consistency: [click for more.](https://github.com/ehsaniara/delay-box/blob/main/WhyDelayBox.md#1-handling-eventual-consistency)
+2. Mitigating Network Partitions: [click for more.](https://github.com/ehsaniara/delay-box/blob/main/WhyDelayBox.md#2-mitigating-network-partitions)
+3. Load Management and Throttling: [click for more.](https://github.com/ehsaniara/delay-box/blob/main/WhyDelayBox.md#3-load-management-and-throttling)
+4. Failure Recovery and Redundancy: [click for more.](https://github.com/ehsaniara/delay-box/blob/main/WhyDelayBox.md#4-failure-recovery-and-redundancy)
+5. Decoupling Components in Event-Driven Architecture: [click for more.](https://github.com/ehsaniara/delay-box/blob/main/WhyDelayBox.md#5-decoupling-components-in-event-driven-architecture)
+6. Improving Reliability in Asynchronous Workflows: [click for more.](https://github.com/ehsaniara/delay-box/blob/main/WhyDelayBox.md#6-improving-reliability-in-asynchronous-workflows)
+7. Dealing with Temporal Anomalies: [click for more.](https://github.com/ehsaniara/delay-box/blob/main/WhyDelayBox.md#7-dealing-with-temporal-anomalies)
+8. Application in Geo-Distributed Systems: [click for more.](https://github.com/ehsaniara/delay-box/blob/main/WhyDelayBox.md#8-application-in-geo-distributed-systems)
 
 
 
